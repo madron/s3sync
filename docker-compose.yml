@@ -1,0 +1,31 @@
+version: '2'
+
+
+services:
+  minio:
+    image: minio/minio
+    network_mode: default
+    environment:
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=password
+      - MINIO_REGION=us-east-1
+    volumes:
+      - server:/data
+    ports:
+      - "0.0.0.0:9000:9000/tcp"
+    command: server /data
+
+  nginx:
+    image: nginx:alpine
+    network_mode: default
+    volumes:
+      - $PWD/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    links:
+      - "minio:minio"
+    ports:
+      - "0.0.0.0:80:80/tcp"
+
+
+volumes:
+  server:
+    driver: local
