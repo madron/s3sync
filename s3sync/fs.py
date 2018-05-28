@@ -4,7 +4,12 @@ from operator import itemgetter
 
 
 class FilesystemEndpoint(object):
-    def get_file_list(self, path):
+    def __init__(self, name='source', paths=[]):
+        self.name = name
+        self.paths = sorted(paths)
+        self.path_list = []
+
+    def get_path_file_list(self, path):
         file_list = []
         for prefix, directories, filenames in os.walk(path):
             for filename in filenames:
