@@ -5,7 +5,7 @@ from unittest import TestCase
 from .. import fs
 
 
-class FilesystemEndpointTest(TestCase):
+class FilesystemEndpointGetFsKeyTest(TestCase):
     def setUp(self):
         self.base_path = os.path.dirname(__file__)
 
@@ -28,7 +28,7 @@ class FilesystemEndpointTest(TestCase):
         self.assertEqual(f['size'], 8)
         self.assertIsInstance(f['last_modified'], float)
 
-    def test_get_fs_key_data_1(self):
+    def test_1(self):
         base_path = self.base_path
         includes = [
             'files',
@@ -52,7 +52,7 @@ class FilesystemEndpointTest(TestCase):
         self.assertIsInstance(f['last_modified'], float)
         self.assertEqual(len(key_data), 5)
 
-    def test_get_fs_key_data_2(self):
+    def test_2(self):
         base_path = self.base_path
         includes = [
             os.path.join('files', 'd1'),
@@ -67,7 +67,7 @@ class FilesystemEndpointTest(TestCase):
         self.assertIsInstance(f['last_modified'], float)
         self.assertEqual(len(key_data), 2)
 
-    def test_get_fs_key_data_3(self):
+    def test_3(self):
         base_path = self.base_path
         includes = [
             os.path.join('files', 'd1'),
@@ -89,7 +89,7 @@ class FilesystemEndpointTest(TestCase):
         self.assertIsInstance(f['last_modified'], float)
         self.assertEqual(len(key_data), 4)
 
-    def test_get_fs_key_data_4(self):
+    def test_4(self):
         base_path = os.path.join(self.base_path, 'files')
         includes = [
             '',
@@ -113,7 +113,7 @@ class FilesystemEndpointTest(TestCase):
         self.assertIsInstance(f['last_modified'], float)
         self.assertEqual(len(key_data), 5)
 
-    def test_get_fs_key_data_5(self):
+    def test_5(self):
         base_path = self.base_path
         includes = [
             os.path.join('files', 'f1'),
@@ -124,6 +124,38 @@ class FilesystemEndpointTest(TestCase):
         self.assertEqual(f['size'], 8)
         self.assertIsInstance(f['last_modified'], float)
         self.assertEqual(len(key_data), 1)
+
+    def test_excludes_not_in_include(self):
+        base_path = self.base_path
+        includes = [
+            os.path.join('files', 'd1'),
+            os.path.join('files', 'd2'),
+        ]
+        excludes = [
+            os.path.join('files', 'f1'),
+        ]
+        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        key_data = endpoint.get_fs_key_data()
+        self.assertEqual(
+            sorted(list(key_data.keys())),
+            ['files/d1/f1', 'files/d1/f2', 'files/d2/f1', 'files/d2/f2'],
+        )
+
+    def test_excludes_1(self):
+        base_path = self.base_path
+        includes = [
+            os.path.join('files', 'd1'),
+            os.path.join('files', 'd2'),
+        ]
+        excludes = [
+            os.path.join('files', 'd2', 'f1'),
+        ]
+        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, excludes=excludes, cache_file=StringIO())
+        key_data = endpoint.get_fs_key_data()
+        self.assertEqual(
+            sorted(list(key_data.keys())),
+            ['files/d1/f1', 'files/d1/f2', 'files/d2/f2'],
+        )
 
 
 class FilesystemEndpointReadCacheTest(TestCase):

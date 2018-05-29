@@ -8,15 +8,22 @@ DEFAULT_CACHE_DIR = os.path.join('/', 'var', 'cache', 's3sync')
 
 
 class FilesystemEndpoint(object):
-    def __init__(self, name='source', base_path='/', includes=[], cache_file=None):
+    def __init__(self, name='source', base_path='/', includes=[], excludes=[], cache_file=None):
         self.name = name
         self.base_path = base_path
-        self.includes = sorted(includes)
+        self.includes = includes
+        self.excludes = excludes
         self.key_data = dict()
         self.etag = dict()
         cache_file_name = os.path.join(DEFAULT_CACHE_DIR, '{}.json'.format(name))
         self.cache_file = cache_file or open(cache_file_name, '+')
         self.read_cache()
+
+    def is_excluded(self, key):
+        for exclude in self.excludes:
+            if key.startswith(exclude):
+                return True
+        return False
 
     def get_path_data(self, include):
         path_data = dict()
@@ -25,20 +32,22 @@ class FilesystemEndpoint(object):
             file_path = path
             stat = os.stat(file_path)
             key = file_path.replace(self.base_path, '', 1).lstrip('/')
-            path_data[key] = dict(
-                size=stat.st_size,
-                last_modified=stat.st_mtime,
-            )
+            if not self.is_excluded(key):
+                path_data[key] = dict(
+                    size=stat.st_size,
+                    last_modified=stat.st_mtime,
+                )
         else:
             for prefix, directories, filenames in os.walk(path):
                 for filename in filenames:
                     file_path = os.path.join(prefix, filename)
                     stat = os.stat(file_path)
                     key = file_path.replace(self.base_path, '', 1).lstrip('/')
-                    path_data[key] = dict(
-                        size=stat.st_size,
-                        last_modified=stat.st_mtime,
-                    )
+                    if not self.is_excluded(key):
+                        path_data[key] = dict(
+                            size=stat.st_size,
+                            last_modified=stat.st_mtime,
+                        )
         return path_data
 
     def get_fs_key_data(self):
