@@ -43,7 +43,7 @@ class FilesystemEndpoint(object):
     def get_fs_key_data(self):
         key_data = dict()
         for include in self.includes:
-            key_data[include] = self.get_path_data(include)
+            key_data.update(self.get_path_data(include))
         return key_data
 
     def read_cache(self):
@@ -59,14 +59,13 @@ class FilesystemEndpoint(object):
 
     def update_key_data(self):
         fs_data = self.get_fs_key_data()
-        for include, path_data in fs_data.items():
-            for key, data in path_data.items():
-                old_data = self.key_data.get(include, dict()).get(key, dict())
-                if data['size'] == old_data.get('size') and data['last_modified'] == old_data.get('last_modified'):
-                    data['etag'] = old_data['etag']
-                else:
-                    path = os.path.join(self.base_path, key)
-                    data['etag'] = utils.get_etag(path)
+        for key, data in fs_data.items():
+            old_data = self.key_data.get(key, dict())
+            if data['size'] == old_data.get('size') and data['last_modified'] == old_data.get('last_modified'):
+                data['etag'] = old_data['etag']
+            else:
+                path = os.path.join(self.base_path, key)
+                data['etag'] = utils.get_etag(path)
         if self.key_data == fs_data:
             return False
         self.key_data = fs_data

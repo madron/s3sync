@@ -35,24 +35,22 @@ class FilesystemEndpointTest(TestCase):
         ]
         endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
-        self.assertEqual(len(key_data), 1)
-        file_data = key_data[includes[0]]
-        f = file_data['files/d1/f1']
+        f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['files/d1/f2']
+        f = key_data['files/d1/f2']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['files/d2/f1']
+        f = key_data['files/d2/f1']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['files/d2/f2']
+        f = key_data['files/d2/f2']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['files/f1']
+        f = key_data['files/f1']
         self.assertEqual(f['size'], 8)
         self.assertIsInstance(f['last_modified'], float)
-        self.assertEqual(len(file_data), 5)
+        self.assertEqual(len(key_data), 5)
 
     def test_get_fs_key_data_2(self):
         base_path = self.base_path
@@ -61,16 +59,13 @@ class FilesystemEndpointTest(TestCase):
         ]
         endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
-        self.assertEqual(len(key_data), 1)
-        # os.path.join('files', 'd1')
-        file_data = key_data[includes[0]]
-        f = file_data['files/d1/f1']
+        f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['files/d1/f2']
+        f = key_data['files/d1/f2']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        self.assertEqual(len(file_data), 2)
+        self.assertEqual(len(key_data), 2)
 
     def test_get_fs_key_data_3(self):
         base_path = self.base_path
@@ -80,25 +75,19 @@ class FilesystemEndpointTest(TestCase):
         ]
         endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
-        self.assertEqual(len(key_data), 2)
-        # os.path.join('files', 'd1')
-        file_data = key_data[includes[0]]
-        f = file_data['files/d1/f1']
+        f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['files/d1/f2']
+        f = key_data['files/d1/f2']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        self.assertEqual(len(file_data), 2)
-        # os.path.join('files', 'd2')
-        file_data = key_data[includes[1]]
-        f = file_data['files/d2/f1']
+        f = key_data['files/d2/f1']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['files/d2/f2']
+        f = key_data['files/d2/f2']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        self.assertEqual(len(file_data), 2)
+        self.assertEqual(len(key_data), 4)
 
     def test_get_fs_key_data_4(self):
         base_path = os.path.join(self.base_path, 'files')
@@ -107,25 +96,22 @@ class FilesystemEndpointTest(TestCase):
         ]
         endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
-        self.assertEqual(len(key_data), 1)
-        # ''
-        file_data = key_data[includes[0]]
-        f = file_data['d1/f1']
+        f = key_data['d1/f1']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['d1/f2']
+        f = key_data['d1/f2']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['d2/f1']
+        f = key_data['d2/f1']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['d2/f2']
+        f = key_data['d2/f2']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
-        f = file_data['f1']
+        f = key_data['f1']
         self.assertEqual(f['size'], 8)
         self.assertIsInstance(f['last_modified'], float)
-        self.assertEqual(len(file_data), 5)
+        self.assertEqual(len(key_data), 5)
 
     def test_get_fs_key_data_5(self):
         base_path = self.base_path
@@ -134,13 +120,10 @@ class FilesystemEndpointTest(TestCase):
         ]
         endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
-        self.assertEqual(len(key_data), 1)
-        # os.path.join('files', 'f1')
-        file_data = key_data[includes[0]]
-        f = file_data['files/f1']
+        f = key_data['files/f1']
         self.assertEqual(f['size'], 8)
         self.assertIsInstance(f['last_modified'], float)
-        self.assertEqual(len(file_data), 1)
+        self.assertEqual(len(key_data), 1)
 
 
 class FilesystemEndpointReadCacheTest(TestCase):
@@ -214,25 +197,20 @@ class FilesystemEndpointUpdateKeyDataTest(TestCase):
         self.assertEqual(endpoint.key_data, dict())
         changed = endpoint.update_key_data()
         self.assertTrue(changed)
-        self.assertEqual(len(endpoint.key_data), 2)
-        # os.path.join('files', 'd1')
-        file_data = endpoint.key_data[includes[0]]
-        f = file_data['files/d1/f1']
+        key_data = endpoint.key_data
+        f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
         self.assertEqual(f['etag'], 'c3f058778ae8b1cefa04425c2178b7a6')
-        f = file_data['files/d1/f2']
+        f = key_data['files/d1/f2']
         self.assertEqual(f['size'], 14)
         self.assertIsInstance(f['last_modified'], float)
         self.assertEqual(f['etag'], '909a4146156421135da6b38e8efd3a3b')
-        self.assertEqual(len(file_data), 2)
-        # os.path.join('files', 'f1')
-        file_data = endpoint.key_data[includes[1]]
-        f = file_data['files/f1']
+        f = key_data['files/f1']
         self.assertEqual(f['size'], 8)
         self.assertIsInstance(f['last_modified'], float)
         self.assertEqual(f['etag'], '16fed0121505838f492d0295ba547558')
-        self.assertEqual(len(file_data), 1)
+        self.assertEqual(len(key_data), 3)
         # cache file is updated
         content = cache_file.getvalue()
         self.assertIn('909a4146156421135da6b38e8efd3a3b', content)
