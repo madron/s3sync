@@ -163,21 +163,21 @@ class FilesystemEndpointReadCacheTest(TestCase):
         cache_file = StringIO()
         endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
         self.assertEqual(endpoint.key_data, dict())
-        endpoint.read_cache()
+        endpoint.key_data = endpoint.cache.read()
         self.assertEqual(endpoint.key_data, dict())
 
     def test_empty_2(self):
         cache_file = StringIO('{}')
         endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
         self.assertEqual(endpoint.key_data, dict())
-        endpoint.read_cache()
+        endpoint.key_data = endpoint.cache.read()
         self.assertEqual(endpoint.key_data, dict())
 
     def test_1(self):
         cache_file = StringIO('{"include": {"files/f1": {"size": 8, "etag": "hash", "last_modified": 1527577755.3356848}}}')
         endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
         endpoint.key_data = dict()
-        endpoint.read_cache()
+        endpoint.key_data = endpoint.cache.read()
         self.assertEqual(
             endpoint.key_data,
             dict(include={"files/f1": {"size": 8, "etag": "hash", "last_modified": 1527577755.3356848}}),
@@ -189,29 +189,27 @@ class FilesystemEndpointWriteCacheTest(TestCase):
         cache_file = StringIO()
         endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
         endpoint.key_data = dict()
-        endpoint.write_cache()
+        endpoint.cache.write(endpoint.key_data)
         self.assertEqual(cache_file.getvalue() , '{}')
 
     def test_1(self):
         cache_file = StringIO()
         endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
-        endpoint.key_data = dict(include=dict())
-        endpoint.write_cache()
-        self.assertEqual(cache_file.getvalue() , '{"include": {}}')
+        endpoint.key_data = dict(name='Bob')
+        endpoint.cache.write(endpoint.key_data)
+        self.assertIn('"name": "Bob"', cache_file.getvalue())
 
     def test_2(self):
         cache_file = StringIO()
         endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
-        endpoint.key_data = dict(
-            include={
-                'files/f1': dict(size=8, etag='hash', last_modified=1527577755.3356848),
-            }
-        )
-        endpoint.write_cache()
-        self.assertEqual(
-            cache_file.getvalue() ,
-            '{"include": {"files/f1": {"size": 8, "etag": "hash", "last_modified": 1527577755.3356848}}}',
-        )
+        endpoint.key_data = {
+            'files/f1': dict(size=8, etag='hash', last_modified=1527577755.3356848),
+        }
+        endpoint.cache.write(endpoint.key_data)
+        self.assertIn('"files/f1": {', cache_file.getvalue())
+        self.assertIn('"size": 8', cache_file.getvalue())
+        self.assertIn('"etag": "hash"', cache_file.getvalue())
+        self.assertIn('"last_modified": 1527577755.3356848', cache_file.getvalue())
 
 
 class FilesystemEndpointUpdateKeyDataTest(TestCase):
@@ -267,3 +265,12 @@ class FilesystemEndpointUpdateKeyDataTest(TestCase):
         changed = endpoint.update_key_data()
         changed = endpoint.update_key_data()
         self.assertFalse(changed)
+
+    def test_hashed_bytes_threshold(self):
+        base_path = self.base_path
+        includes = [
+            os.path.join('files'),
+        ]
+        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO(), hashed_bytes_threshold=20)
+        changed = endpoint.update_key_data()
+        self.assertTrue(changed)

@@ -3,21 +3,22 @@ import os
 from datetime import datetime
 from operator import itemgetter
 from . import utils
+from .cache import Cache
 
-DEFAULT_CACHE_DIR = os.path.join('/', 'var', 'cache', 's3sync')
+HASHED_BYTES_THRESHOLD = 1024 * 1024 * 100
 
 
 class FilesystemEndpoint(object):
-    def __init__(self, name='source', base_path='/', includes=[], excludes=[], cache_file=None):
+    def __init__(self, name='source', base_path='/', includes=[], excludes=[],
+                 cache_dir=None, cache_file=None, hashed_bytes_threshold=HASHED_BYTES_THRESHOLD):
         self.name = name
         self.base_path = base_path
         self.includes = includes
         self.excludes = excludes
-        self.key_data = dict()
         self.etag = dict()
-        cache_file_name = os.path.join(DEFAULT_CACHE_DIR, '{}.json'.format(name))
-        self.cache_file = cache_file or open(cache_file_name, '+')
-        self.read_cache()
+        self.hashed_bytes_threshold = hashed_bytes_threshold
+        self.cache = Cache(name=name, cache_dir=cache_dir, cache_file=cache_file)
+        self.key_data = self.cache.read()
 
     def is_excluded(self, key):
         for exclude in self.excludes:
@@ -28,26 +29,23 @@ class FilesystemEndpoint(object):
     def get_path_data(self, include):
         path_data = dict()
         path = os.path.join(self.base_path, include)
+        path_list = []
         if os.path.isfile(path):
-            file_path = path
-            stat = os.stat(file_path)
-            key = file_path.replace(self.base_path, '', 1).lstrip('/')
+            path_list.append(path)
+        else:
+            for prefix, directories, filenames in os.walk(path):
+                for filename in filenames:
+                    file_path = os.path.join(prefix, filename)
+                    if os.path.isfile(file_path):
+                        path_list.append(file_path)
+        for path in path_list:
+            stat = os.stat(path)
+            key = path.replace(self.base_path, '', 1).lstrip('/')
             if not self.is_excluded(key):
                 path_data[key] = dict(
                     size=stat.st_size,
                     last_modified=stat.st_mtime,
                 )
-        else:
-            for prefix, directories, filenames in os.walk(path):
-                for filename in filenames:
-                    file_path = os.path.join(prefix, filename)
-                    stat = os.stat(file_path)
-                    key = file_path.replace(self.base_path, '', 1).lstrip('/')
-                    if not self.is_excluded(key):
-                        path_data[key] = dict(
-                            size=stat.st_size,
-                            last_modified=stat.st_mtime,
-                        )
         return path_data
 
     def get_fs_key_data(self):
@@ -56,29 +54,25 @@ class FilesystemEndpoint(object):
             key_data.update(self.get_path_data(include))
         return key_data
 
-    def read_cache(self):
-        self.cache_file.seek(0)
-        try:
-            self.key_data = json.load(self.cache_file)
-        except json.decoder.JSONDecodeError:
-            pass
-
-    def write_cache(self):
-        self.cache_file.seek(0)
-        json.dump(self.key_data, self.cache_file)
-
     def update_key_data(self):
         fs_data = self.get_fs_key_data()
+        hashed_bytes = 0
         for key, data in fs_data.items():
             old_data = self.key_data.get(key, dict())
-            if data['size'] == old_data.get('size') and data['last_modified'] == old_data.get('last_modified'):
-                data['etag'] = old_data['etag']
+            if      data['size'] == old_data.get('size') \
+                and data['last_modified'] == old_data.get('last_modified') \
+                and 'etag' in old_data:
+                data['etag'] = old_data.get('etag')
             else:
                 path = os.path.join(self.base_path, key)
                 data['etag'] = utils.get_etag(path)
+                hashed_bytes += data['size']
+                if hashed_bytes > self.hashed_bytes_threshold:
+                    self.cache.write(fs_data)
+                    hashed_bytes = 0
         if self.key_data == fs_data:
             return False
         self.key_data = fs_data
-        self.write_cache()
+        self.cache.write(self.key_data)
         self.etag = dict((key, data['etag']) for key, data in self.key_data.items())
         return True
