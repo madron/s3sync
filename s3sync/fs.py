@@ -13,6 +13,7 @@ class FilesystemEndpoint(object):
         self.base_path = base_path
         self.includes = sorted(includes)
         self.key_data = dict()
+        self.etag = dict()
         cache_file_name = os.path.join(DEFAULT_CACHE_DIR, '{}.json'.format(name))
         self.cache_file = cache_file or open(cache_file_name, '+')
         self.read_cache()
@@ -70,4 +71,5 @@ class FilesystemEndpoint(object):
             return False
         self.key_data = fs_data
         self.write_cache()
+        self.etag = dict((key, data['etag']) for key, data in self.key_data.items())
         return True

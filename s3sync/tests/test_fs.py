@@ -216,6 +216,15 @@ class FilesystemEndpointUpdateKeyDataTest(TestCase):
         self.assertIn('909a4146156421135da6b38e8efd3a3b', content)
         self.assertIn('c3f058778ae8b1cefa04425c2178b7a6', content)
         self.assertIn('16fed0121505838f492d0295ba547558', content)
+        # etag attribute is updated
+        self.assertEqual(
+            endpoint.etag,
+            {
+                'files/d1/f1': 'c3f058778ae8b1cefa04425c2178b7a6',
+                'files/d1/f2': '909a4146156421135da6b38e8efd3a3b',
+                'files/f1': '16fed0121505838f492d0295ba547558',
+            },
+        )
 
     def test_unchanged(self):
         base_path = self.base_path
