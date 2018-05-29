@@ -12,8 +12,8 @@ def get_etag(filename, chunk_size=CHUNK_SIZE):
                 break
             md5s.append(hashlib.md5(data))
     if len(md5s) == 1:
-        return '"{}"'.format(md5s[0].hexdigest())
+        return md5s[0].hexdigest()
 
     digests = b"".join(m.digest() for m in md5s)
     md5_hash = hashlib.md5(digests)
-    return '"{}-{}"'.format(md5_hash.hexdigest(), len(md5s))
+    return '{}-{}'.format(md5_hash.hexdigest(), len(md5s))
