@@ -6,3 +6,9 @@ class BaseEndpoint(object):
     def log_info(self, message):
         if self.verbosity > 0:
             print('<{}> {}'.format(self.log_prefix, message))
+
+    def is_excluded(self, key):
+        for exclude in self.excludes:
+            if key.startswith(exclude):
+                return True
+        return False

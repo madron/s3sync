@@ -22,12 +22,6 @@ class FilesystemEndpoint(BaseEndpoint):
         self.cache = Cache(name=name, cache_dir=cache_dir, cache_file=cache_file)
         self.key_data = self.cache.read()
 
-    def is_excluded(self, key):
-        for exclude in self.excludes:
-            if key.startswith(exclude):
-                return True
-        return False
-
     def get_path_data(self, include):
         path_data = dict()
         path = os.path.join(self.base_path, include)

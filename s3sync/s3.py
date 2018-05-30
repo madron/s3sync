@@ -18,7 +18,15 @@ class S3Endpoint(BaseEndpoint):
         self.log_info('profile: "{}"  bucket: "{}"  path: "{}"'.format( self.profile, self.bucket, self.base_path))
 
     def update_key_data(self):
+        self.key_data = dict()
         for include in self.includes:
             prefix = '{}/{}'.format(self.base_path, include)
             for obj in self.bucket.objects.filter(Prefix=prefix):
-                print(obj.meta.data)
+                data = obj.meta.data
+                key = data['Key'].lstrip('/')
+                if not self.is_excluded(key):
+                    self.key_data[key] = dict(
+                        size=data['Size'],
+                        etag=data['ETag'].strip('"'),
+                    )
+        self.etag = dict((key, data['etag']) for key, data in self.key_data.items())
