@@ -16,6 +16,8 @@ def main():
         default=[''], help='Paths to include, if not specified it will sync everything in source path')
     parser.add_argument('--exclude', dest='excludes', type=str, nargs='*',
         default=[], help='paths to exclude', metavar='PATH')
+    parser.add_argument('-v', '--verbosity', dest='verbosity', type=int,
+        default=1, help='Verbosity level', metavar='N')
 
     options = vars(parser.parse_args())
     print(options)
@@ -27,5 +29,6 @@ def main():
             includes=options['includes'],
             excludes=options['excludes'],
             cache_dir=options['cache_dir'],
+            verbosity=options['verbosity'],
         )
         source.update_key_data()

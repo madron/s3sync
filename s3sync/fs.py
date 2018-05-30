@@ -10,9 +10,9 @@ HASHED_BYTES_THRESHOLD = 1024 * 1024 * 100
 
 
 class FilesystemEndpoint(BaseEndpoint):
-    def __init__(self, name='source', base_path='/', includes=[], excludes=[],
+    def __init__(self, name='source', base_path='/', includes=[], excludes=[], verbosity=0,
                  cache_dir=None, cache_file=None, hashed_bytes_threshold=HASHED_BYTES_THRESHOLD):
-        super().__init__(log_prefix=name, verbosity=0)
+        super().__init__(log_prefix=name, verbosity=verbosity)
         self.name = name
         self.base_path = base_path
         self.includes = includes
