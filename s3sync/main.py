@@ -1,6 +1,7 @@
 import pathlib
 from argparse import ArgumentParser
 from .fs import FilesystemEndpoint
+from .s3 import S3Endpoint
 
 DEFAULT_SOURCE = DEFAULT_CACHE_DIR = pathlib.Path.home().as_posix()
 
@@ -22,13 +23,21 @@ def main():
     options = vars(parser.parse_args())
     print(options)
 
+    kwargs = dict(
+            includes=options['includes'],
+            excludes=options['excludes'],
+            verbosity=options['verbosity'],
+    )
     if options['source'].startswith('/'):
         source = FilesystemEndpoint(
             name='source',
             base_path=options['source'],
-            includes=options['includes'],
-            excludes=options['excludes'],
             cache_dir=options['cache_dir'],
-            verbosity=options['verbosity'],
+            **kwargs,
         )
-        source.update_key_data()
+    else:
+        source = S3Endpoint(
+            base_url=options['source'],
+            **kwargs,
+        )
+    source.update_key_data()

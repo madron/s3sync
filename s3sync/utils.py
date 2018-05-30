@@ -17,3 +17,15 @@ def get_etag(filename, chunk_size=CHUNK_SIZE):
     digests = b"".join(m.digest() for m in md5s)
     md5_hash = hashlib.md5(digests)
     return '{}-{}'.format(md5_hash.hexdigest(), len(md5s))
+
+
+def parse_s3_url(url):
+    profile, bucket_path = url.split(':', 1)
+    parts = bucket_path.split('/', 1)
+    if len(parts) == 1:
+        bucket = parts[0]
+        path = ''
+    else:
+        bucket = parts[0]
+        path = parts[1].rstrip('/')
+    return profile, bucket, path

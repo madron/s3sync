@@ -1,6 +1,6 @@
 import os
 from unittest import TestCase
-from s3sync import utils
+from .. import utils
 
 
 class GetEtagTest(TestCase):
@@ -14,3 +14,23 @@ class GetEtagTest(TestCase):
     def test_multipart(self):
         etag = utils.get_etag(os.path.join(self.files_path, 'f1'), 2)
         self.assertEqual(etag, '040e6beb623b405da8d66016cfcf75ad-4')
+
+
+class ParseS3UrlTest(TestCase):
+    def test_profile_bucket(self):
+        profile, bucket, path = utils.parse_s3_url('default:bucket1')
+        self.assertEqual(profile, 'default')
+        self.assertEqual(bucket, 'bucket1')
+        self.assertEqual(path, '')
+
+    def test_profile_bucket_path(self):
+        profile, bucket, path = utils.parse_s3_url('default:bucket1/attic')
+        self.assertEqual(profile, 'default')
+        self.assertEqual(bucket, 'bucket1')
+        self.assertEqual(path, 'attic')
+
+    def test_profile_bucket_path_slash(self):
+        profile, bucket, path = utils.parse_s3_url('minio:bck2/attic/')
+        self.assertEqual(profile, 'minio')
+        self.assertEqual(bucket, 'bck2')
+        self.assertEqual(path, 'attic')
