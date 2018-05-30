@@ -2,7 +2,7 @@ import pathlib
 from argparse import ArgumentParser
 from .fs import FilesystemEndpoint
 
-DEFAULT_SOURCE = DEFAULT_CACHE_DIR = pathlib.Path.home()
+DEFAULT_SOURCE = DEFAULT_CACHE_DIR = pathlib.Path.home().as_posix()
 
 
 def main():
@@ -29,6 +29,3 @@ def main():
             cache_dir=options['cache_dir'],
         )
         source.update_key_data()
-        total_size = sum([d['size'] for d in source.key_data.values()])
-        print('files:', len(source.key_data))
-        print('bytes:', total_size)
