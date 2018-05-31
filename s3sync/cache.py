@@ -1,10 +1,13 @@
 import json
 import os
+from .constants import DEFAULT_CACHE_DIR
+
 
 class Cache(object):
     def __init__(self, name='source', cache_dir=None, cache_file=None):
         self.cache_file = cache_file
         if not cache_file:
+            cache_dir = cache_dir or DEFAULT_CACHE_DIR
             self.cache_file_name = os.path.join(cache_dir, '.s3sync-{}.json'.format(name))
 
     def read(self):

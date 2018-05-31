@@ -4,9 +4,8 @@ from datetime import datetime
 from operator import itemgetter
 from . import utils
 from .cache import Cache
+from .constants import HASHED_BYTES_THRESHOLD
 from .endpoint import BaseEndpoint
-
-HASHED_BYTES_THRESHOLD = 1024 * 1024 * 100
 
 
 class FilesystemEndpoint(BaseEndpoint):
