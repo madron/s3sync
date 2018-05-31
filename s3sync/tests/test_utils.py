@@ -34,3 +34,11 @@ class ParseS3UrlTest(TestCase):
         self.assertEqual(profile, 'minio')
         self.assertEqual(bucket, 'bck2')
         self.assertEqual(path, 'attic')
+
+
+class GetOperationsTest(TestCase):
+    def test_1(self):
+        source = dict(f1='t1', f2='t2')
+        destination = dict(f1='t1')
+        operations = utils.get_operations(source, destination)
+        self.assertEqual(operations, dict(transfer=['f2']))

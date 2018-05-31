@@ -1,3 +1,4 @@
+from .import utils
 from .fs import FilesystemEndpoint
 from .s3 import S3Endpoint
 
@@ -18,3 +19,9 @@ class SyncManager(object):
         else:
             options['base_url'] = path
             return S3Endpoint(**options)
+
+    def get_operations(self):
+        result = utils.get_operations(
+            self.source.key_data,
+            self.destination.key_data,
+        )

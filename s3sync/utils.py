@@ -29,3 +29,10 @@ def parse_s3_url(url):
         bucket = parts[0]
         path = parts[1].rstrip('/')
     return profile, bucket, path
+
+
+def get_operations(source, destination):
+    transfer = source.keys() - destination.keys()
+    return dict(
+        transfer=list(transfer),
+    )
