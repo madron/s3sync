@@ -225,8 +225,7 @@ class FilesystemEndpointUpdateKeyDataTest(TestCase):
         cache_file=StringIO()
         endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=cache_file)
         self.assertEqual(endpoint.key_data, dict())
-        changed = endpoint.update_key_data()
-        self.assertTrue(changed)
+        endpoint.update_key_data()
         key_data = endpoint.key_data
         f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
@@ -256,21 +255,10 @@ class FilesystemEndpointUpdateKeyDataTest(TestCase):
             },
         )
 
-    def test_unchanged(self):
-        base_path = self.base_path
-        includes = [
-            os.path.join('files', 'f1'),
-        ]
-        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
-        changed = endpoint.update_key_data()
-        changed = endpoint.update_key_data()
-        self.assertFalse(changed)
-
     def test_hashed_bytes_threshold(self):
         base_path = self.base_path
         includes = [
             os.path.join('files'),
         ]
         endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO(), hashed_bytes_threshold=20)
-        changed = endpoint.update_key_data()
-        self.assertTrue(changed)
+        endpoint.update_key_data()

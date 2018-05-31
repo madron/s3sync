@@ -52,10 +52,9 @@ class FilesystemEndpoint(BaseEndpoint):
         hashed_bytes = 0
         hashed_files = 0
         total_files = len(fs_data)
-        total_bytes = 0
         for key, data in fs_data.items():
             hashed_files += 1
-            total_bytes += data['size']
+            self.total_bytes += data['size']
             old_data = self.key_data.get(key, dict())
             if      data['size'] == old_data.get('size') \
                 and data['last_modified'] == old_data.get('last_modified') \
@@ -69,13 +68,9 @@ class FilesystemEndpoint(BaseEndpoint):
                     self.cache.write(fs_data)
                     hashed_bytes = 0
                     self.log_info('Hashed files: {}/{}'.format(hashed_files, total_files))
-        changed = True
-        if self.key_data == fs_data:
-            changed = False
-        if changed:
-            self.key_data = fs_data
-            self.cache.write(self.key_data)
-            self.etag = dict((key, data['etag']) for key, data in self.key_data.items())
-        self.log_info('Total files: {}'.format(total_files))
-        self.log_info('Total bytes: {}'.format(total_bytes))
-        return changed
+        self.key_data = fs_data
+        self.cache.write(self.key_data)
+        self.update_etag()
+        self.update_totals()
+        self.log_info('Total files: {}'.format(self.total_files))
+        self.log_info('Total bytes: {}'.format(self.total_bytes))

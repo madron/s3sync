@@ -6,8 +6,7 @@ from .endpoint import BaseEndpoint
 
 class S3Endpoint(BaseEndpoint):
     def __init__(self, base_url=None, **kwargs):
-        self.profile, self.bucket, self.base_path = utils.parse_s3_url(
-            base_url)
+        self.profile, self.bucket, self.base_path = utils.parse_s3_url( base_url)
         super().__init__(log_prefix=self.profile, **kwargs)
         self.log_info('profile: "{}"  bucket: "{}"  path: "{}"'.format( self.profile, self.bucket, self.base_path))
 
@@ -25,5 +24,7 @@ class S3Endpoint(BaseEndpoint):
                         size=data['Size'],
                         etag=data['ETag'].strip('"'),
                     )
-        self.etag = dict((key, data['etag']) for key, data in self.key_data.items())
-        print(self.etag)
+        self.update_etag()
+        self.update_totals()
+        self.log_info('Total files: {}'.format(self.total_files))
+        self.log_info('Total bytes: {}'.format(self.total_bytes))
