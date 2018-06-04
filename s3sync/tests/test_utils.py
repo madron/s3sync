@@ -5,7 +5,11 @@ from .. import utils
 
 class GetEtagTest(TestCase):
     def setUp(self):
-        self.files_path = os.path.join(os.path.dirname(__file__), 'files')
+        self.files_path = os.path.join(os.path.dirname(__file__), 'etags')
+
+    def test_empty(self):
+        etag = utils.get_etag(os.path.join(self.files_path, 'empty'))
+        self.assertEqual(etag, 'd41d8cd98f00b204e9800998ecf8427e')
 
     def test_small(self):
         etag = utils.get_etag(os.path.join(self.files_path, 'f1'))

@@ -24,8 +24,8 @@ class SyncManager(object):
 
     def get_operations(self):
         return utils.get_operations(
-            self.source.key_data,
-            self.destination.key_data,
+            self.source.etag,
+            self.destination.etag,
         )
 
     def sync(self):
