@@ -9,7 +9,7 @@ from .constants import HASHED_BYTES_THRESHOLD
 from .endpoint import BaseEndpoint
 
 
-class FilesystemEndpoint(BaseEndpoint):
+class FSEndpoint(BaseEndpoint):
     def __init__(self, name='source', base_path='/', cache_dir=None, cache_file=None,
                  hashed_bytes_threshold=HASHED_BYTES_THRESHOLD, **kwargs):
         super().__init__(log_prefix=name, **kwargs)

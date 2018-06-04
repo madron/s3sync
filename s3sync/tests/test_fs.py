@@ -5,12 +5,12 @@ from unittest import TestCase
 from .. import fs
 
 
-class FilesystemEndpointGetFsKeyTest(TestCase):
+class FSEndpointGetFsKeyTest(TestCase):
     def setUp(self):
         self.base_path = os.path.dirname(__file__)
 
     def test_get_path_data(self):
-        endpoint = fs.FilesystemEndpoint(base_path=self.base_path, cache_file=StringIO())
+        endpoint = fs.FSEndpoint(base_path=self.base_path, cache_file=StringIO())
         file_data = endpoint.get_path_data('files')
         f = file_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
@@ -33,7 +33,7 @@ class FilesystemEndpointGetFsKeyTest(TestCase):
         includes = [
             'files',
         ]
-        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
@@ -57,7 +57,7 @@ class FilesystemEndpointGetFsKeyTest(TestCase):
         includes = [
             os.path.join('files', 'd1'),
         ]
-        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
@@ -73,7 +73,7 @@ class FilesystemEndpointGetFsKeyTest(TestCase):
             os.path.join('files', 'd1'),
             os.path.join('files', 'd2'),
         ]
-        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
@@ -94,7 +94,7 @@ class FilesystemEndpointGetFsKeyTest(TestCase):
         includes = [
             '',
         ]
-        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         f = key_data['d1/f1']
         self.assertEqual(f['size'], 14)
@@ -118,7 +118,7 @@ class FilesystemEndpointGetFsKeyTest(TestCase):
         includes = [
             os.path.join('files', 'f1'),
         ]
-        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         f = key_data['files/f1']
         self.assertEqual(f['size'], 8)
@@ -134,7 +134,7 @@ class FilesystemEndpointGetFsKeyTest(TestCase):
         excludes = [
             os.path.join('files', 'f1'),
         ]
-        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         self.assertEqual(
             sorted(list(key_data.keys())),
@@ -150,7 +150,7 @@ class FilesystemEndpointGetFsKeyTest(TestCase):
         excludes = [
             os.path.join('files', 'd2', 'f1'),
         ]
-        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, excludes=excludes, cache_file=StringIO())
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, excludes=excludes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         self.assertEqual(
             sorted(list(key_data.keys())),
@@ -161,21 +161,21 @@ class FilesystemEndpointGetFsKeyTest(TestCase):
 class FilesystemEndpointReadCacheTest(TestCase):
     def test_empty_1(self):
         cache_file = StringIO()
-        endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
+        endpoint = fs.FSEndpoint(cache_file=cache_file)
         self.assertEqual(endpoint.key_data, dict())
         endpoint.key_data = endpoint.cache.read()
         self.assertEqual(endpoint.key_data, dict())
 
     def test_empty_2(self):
         cache_file = StringIO('{}')
-        endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
+        endpoint = fs.FSEndpoint(cache_file=cache_file)
         self.assertEqual(endpoint.key_data, dict())
         endpoint.key_data = endpoint.cache.read()
         self.assertEqual(endpoint.key_data, dict())
 
     def test_1(self):
         cache_file = StringIO('{"include": {"files/f1": {"size": 8, "etag": "hash", "last_modified": 1527577755.3356848}}}')
-        endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
+        endpoint = fs.FSEndpoint(cache_file=cache_file)
         endpoint.key_data = dict()
         endpoint.key_data = endpoint.cache.read()
         self.assertEqual(
@@ -187,21 +187,21 @@ class FilesystemEndpointReadCacheTest(TestCase):
 class FilesystemEndpointWriteCacheTest(TestCase):
     def test_empty(self):
         cache_file = StringIO()
-        endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
+        endpoint = fs.FSEndpoint(cache_file=cache_file)
         endpoint.key_data = dict()
         endpoint.cache.write(endpoint.key_data)
         self.assertEqual(cache_file.getvalue() , '{}')
 
     def test_1(self):
         cache_file = StringIO()
-        endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
+        endpoint = fs.FSEndpoint(cache_file=cache_file)
         endpoint.key_data = dict(name='Bob')
         endpoint.cache.write(endpoint.key_data)
         self.assertIn('"name": "Bob"', cache_file.getvalue())
 
     def test_2(self):
         cache_file = StringIO()
-        endpoint = fs.FilesystemEndpoint(cache_file=cache_file)
+        endpoint = fs.FSEndpoint(cache_file=cache_file)
         endpoint.key_data = {
             'files/f1': dict(size=8, etag='hash', last_modified=1527577755.3356848),
         }
@@ -223,7 +223,7 @@ class FilesystemEndpointUpdateKeyDataTest(TestCase):
             os.path.join('files', 'f1'),
         ]
         cache_file=StringIO()
-        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=cache_file)
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=cache_file)
         self.assertEqual(endpoint.key_data, dict())
         endpoint.update_key_data()
         key_data = endpoint.key_data
@@ -260,5 +260,5 @@ class FilesystemEndpointUpdateKeyDataTest(TestCase):
         includes = [
             os.path.join('files'),
         ]
-        endpoint = fs.FilesystemEndpoint(base_path=base_path, includes=includes, cache_file=StringIO(), hashed_bytes_threshold=20)
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO(), hashed_bytes_threshold=20)
         endpoint.update_key_data()

@@ -1,5 +1,5 @@
 from .import utils
-from .fs import FilesystemEndpoint
+from .fs import FSEndpoint
 from .s3 import S3Endpoint
 
 
@@ -17,7 +17,7 @@ class SyncManager(object):
             options['name'] = name
             options['base_path'] = path
             options['cache_dir'] = kwargs.get('cache_dir')
-            return FilesystemEndpoint(**options)
+            return FSEndpoint(**options)
         else:
             options['base_url'] = path
             return S3Endpoint(**options)
