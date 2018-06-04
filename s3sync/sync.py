@@ -33,6 +33,6 @@ class SyncManager(object):
         self.destination.update_key_data()
         operations = self.get_operations()
         for key in operations['transfer']:
-            self.destination.transfer_from(key, self.source, fake=self.fake)
+            self.source.transfer(key, self.destination, fake=self.fake)
         for key in operations['delete']:
             self.destination.delete(key, fake=self.fake)

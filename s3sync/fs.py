@@ -84,22 +84,28 @@ class FSEndpoint(BaseEndpoint):
         self.log_info('Total files: {}'.format(self.total_files))
         self.log_info('Total bytes: {}'.format(self.total_bytes))
 
-    def transfer_from(self, key, source_endpoint, fake=True):
-        self.log_debug(key, log_prefix='trasfer')
-        if source_endpoint.type == 'fs':
-            source = os.path.join(source_endpoint.base_path, key)
-            destination = os.path.join(self.base_path, key)
+    def get_path(self, key):
+        return os.path.join(self.base_path, key)
+
+    def transfer(self, key, destination_endpoint, fake=True):
+        source_path = self.get_path(key)
+        if destination_endpoint.type in ['fs', 's3']:
             if not fake:
-                try:
-                    try:
-                        copy2(source, destination)
-                    except FileNotFoundError:
-                        os.makedirs(os.path.dirname(destination))
-                        copy2(source, destination)
-                except Exception as e:
-                    self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
+                destination_endpoint.upload(key, source_path)
         else:
             raise NotImplementedError()
+        self.log_info(key, log_prefix='transfer')
+
+    def upload(self, key, source_path):
+        destination_path = self.get_path(key)
+        try:
+            try:
+                copy2(source_path, destination_path)
+            except FileNotFoundError:
+                os.makedirs(os.path.dirname(destination_path))
+                copy2(source_path, destination_path)
+        except Exception as e:
+            self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
 
     def delete(self, key, fake=True):
         self.log_debug(key, log_prefix='delete')

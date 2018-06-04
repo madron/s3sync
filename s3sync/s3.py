@@ -27,7 +27,7 @@ class S3Endpoint(BaseEndpoint):
             prefix = '{}/{}'.format(self.base_path, include)
             for obj in bucket.objects.filter(Prefix=prefix):
                 data = obj.meta.data
-                key = data['Key'].lstrip('/')
+                key = data['Key'].replace(prefix, '', 1)
                 if not self.is_excluded(key):
                     self.key_data[key] = dict(
                         size=data['Size'],
@@ -38,18 +38,34 @@ class S3Endpoint(BaseEndpoint):
         self.log_info('Total files: {}'.format(self.total_files))
         self.log_info('Total bytes: {}'.format(self.total_bytes))
 
-    def transfer_from(self, key, source_endpoint, fake=True):
-        if source_endpoint.type == 'fs':
-            source = os.path.join(source_endpoint.base_path, key)
-            destination = os.path.join(self.base_path, key)
+    def get_path(self, key):
+        return os.path.join(self.base_path, key)
+
+    def transfer(self, key, destination_endpoint, fake=True):
+        source_path = self.get_path(key)
+        if destination_endpoint.type == 'fs':
             if not fake:
-                try:
-                    self.get_bucket().Object(destination).upload_file(source)
-                except Exception as e:
-                    self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
+                self.download(key, destination_endpoint.get_path(key))
         else:
             raise NotImplementedError()
         self.log_info(key, log_prefix='transfer')
+
+    def upload(self, key, source_path):
+        s3_path = self.get_path(key)
+        try:
+            self.get_bucket().Object(s3_path).upload_file(source_path)
+        except Exception as e:
+            self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
+
+    def download(self, key, destination_path):
+        s3_path = self.get_path(key)
+        try:
+            destination_dir = os.path.dirname(destination_path)
+            if not os.path.isdir(destination_dir):
+                os.makedirs(destination_dir)
+            self.get_bucket().Object(s3_path).download_file(destination_path)
+        except Exception as e:
+            self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
 
     def delete(self, key, fake=True):
         if not fake:
