@@ -32,7 +32,10 @@ def parse_s3_url(url):
 
 
 def get_operations(source, destination):
-    transfer = source.keys() - destination.keys()
-    return dict(
-        transfer=list(transfer),
-    )
+    source_keys = set(source.keys())
+    destination_keys = set(destination.keys())
+    intersection = source_keys & destination_keys
+    changed = [k for k in intersection if not source[k] == destination[k]]
+    transfer = sorted(list(source_keys - destination_keys) + changed)
+    delete = sorted(list(destination_keys - source_keys))
+    return dict(transfer=transfer, delete=delete)

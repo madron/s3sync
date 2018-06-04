@@ -37,8 +37,38 @@ class ParseS3UrlTest(TestCase):
 
 
 class GetOperationsTest(TestCase):
-    def test_1(self):
+    def test_up_to_date(self):
+        source = dict(f1='t1', f2='t2')
+        destination = dict(f1='t1', f2='t2')
+        operations = utils.get_operations(source, destination)
+        self.assertEqual(operations, dict(transfer=[], delete=[]))
+
+    def test_destination_missing(self):
         source = dict(f1='t1', f2='t2')
         destination = dict(f1='t1')
         operations = utils.get_operations(source, destination)
-        self.assertEqual(operations, dict(transfer=['f2']))
+        self.assertEqual(operations, dict(transfer=['f2'], delete=[]))
+
+    def test_etag_changed(self):
+        source = dict(f1='t1', f2='t2')
+        destination = dict(f1='changed', f2='t2')
+        operations = utils.get_operations(source, destination)
+        self.assertEqual(operations, dict(transfer=['f1'], delete=[]))
+
+    def test_removed_file(self):
+        source = dict(f1='t1',)
+        destination = dict(f1='t1', f2='t2')
+        operations = utils.get_operations(source, destination)
+        self.assertEqual(operations, dict(transfer=[], delete=['f2']))
+
+    def test_1(self):
+        source = dict(f1='t1',)
+        destination = dict(f1='new', f2='t2')
+        operations = utils.get_operations(source, destination)
+        self.assertEqual(operations, dict(transfer=['f1'], delete=['f2']))
+
+    def test_2(self):
+        source = dict(f1='t1', f2='t2')
+        destination = dict(f1='new')
+        operations = utils.get_operations(source, destination)
+        self.assertEqual(operations, dict(transfer=['f1', 'f2'], delete=[]))
