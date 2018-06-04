@@ -19,9 +19,9 @@ def main():
         default=[], help='paths to exclude', metavar='PATH')
     parser.add_argument('-v', '--verbosity', dest='verbosity', type=int,
         default=1, help='Verbosity level', metavar='N')
+    parser.add_argument('--fake', dest='fake', action='store_true', help='Fake run')
 
     options = vars(parser.parse_args())
 
     manager = SyncManager(**options)
-    manager.source.update_key_data()
-    manager.destination.update_key_data()
+    manager.sync()

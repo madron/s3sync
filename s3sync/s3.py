@@ -8,6 +8,7 @@ class S3Endpoint(BaseEndpoint):
     def __init__(self, base_url=None, **kwargs):
         self.profile, self.bucket, self.base_path = utils.parse_s3_url( base_url)
         super().__init__(log_prefix=self.profile, **kwargs)
+        self.type = 's3'
         self.log_info('profile: "{}"  bucket: "{}"  path: "{}"'.format( self.profile, self.bucket, self.base_path))
 
     def update_key_data(self):

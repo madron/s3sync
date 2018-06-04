@@ -2,6 +2,7 @@ import json
 import os
 from datetime import datetime
 from operator import itemgetter
+from shutil import copy2
 from . import utils
 from .cache import Cache
 from .constants import HASHED_BYTES_THRESHOLD
@@ -12,6 +13,7 @@ class FilesystemEndpoint(BaseEndpoint):
     def __init__(self, name='source', base_path='/', cache_dir=None, cache_file=None,
                  hashed_bytes_threshold=HASHED_BYTES_THRESHOLD, **kwargs):
         super().__init__(log_prefix=name, **kwargs)
+        self.type = 'fs'
         self.name = name
         self.base_path = base_path
         self.hashed_bytes_threshold = hashed_bytes_threshold
@@ -81,3 +83,30 @@ class FilesystemEndpoint(BaseEndpoint):
         self.update_totals()
         self.log_info('Total files: {}'.format(self.total_files))
         self.log_info('Total bytes: {}'.format(self.total_bytes))
+
+    def transfer_from(self, key, source_endpoint, fake=True):
+        self.log_debug(key, log_prefix='trasfer')
+        if source_endpoint.type == 'fs':
+            source = os.path.join(source_endpoint.base_path, key)
+            destination = os.path.join(self.base_path, key)
+            if not fake:
+                try:
+                    try:
+                        copy2(source, destination)
+                    except FileNotFoundError:
+                        os.makedirs(os.path.dirname(destination))
+                        copy2(source, destination)
+                except Exception as e:
+                    self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
+        else:
+            raise NotImplementedError()
+
+    def delete(self, key, fake=True):
+        self.log_debug(key, log_prefix='delete')
+        destination = os.path.join(self.base_path, key)
+        if not fake:
+            try:
+                os.remove(destination)
+            except Exception as e:
+                self.log_error('"{}" {}'.format(
+                    key, e), log_prefix='delete')

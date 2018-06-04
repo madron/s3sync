@@ -4,7 +4,9 @@ from .s3 import S3Endpoint
 
 
 class SyncManager(object):
-    def __init__(self, **kwargs):
+    def __init__(self, fake=False, **kwargs):
+        self.fake = fake
+        self.log_prefix = 'sync'
         self.source = self.get_endpoint(kwargs['source'], 'source', **kwargs)
         self.destination = self.get_endpoint(kwargs['destination'], 'destination', **kwargs)
 
@@ -21,7 +23,16 @@ class SyncManager(object):
             return S3Endpoint(**options)
 
     def get_operations(self):
-        result = utils.get_operations(
+        return utils.get_operations(
             self.source.key_data,
             self.destination.key_data,
         )
+
+    def sync(self):
+        self.source.update_key_data()
+        self.destination.update_key_data()
+        operations = self.get_operations()
+        for key in operations['transfer']:
+            self.destination.transfer_from(key, self.source, fake=self.fake)
+        for key in operations['delete']:
+            self.destination.delete(key, fake=self.fake)
