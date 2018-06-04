@@ -11,7 +11,10 @@ class BaseEndpoint(object):
 
     def log_info(self, message):
         if self.verbosity > 0:
-            print('<{}> {}'.format(self.log_prefix, message))
+            print('INFO <{}> {}'.format(self.log_prefix, message))
+
+    def log_error(self, message):
+        print('ERROR <{}> {}'.format(self.log_prefix, message))
 
     def is_excluded(self, key):
         for exclude in self.excludes:

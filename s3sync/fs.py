@@ -51,6 +51,7 @@ class FilesystemEndpoint(BaseEndpoint):
         hashed_bytes = 0
         hashed_files = 0
         total_files = len(fs_data)
+        key_errors = []
         for key, data in fs_data.items():
             hashed_files += 1
             self.total_bytes += data['size']
@@ -61,12 +62,19 @@ class FilesystemEndpoint(BaseEndpoint):
                 data['etag'] = old_data.get('etag')
             else:
                 path = os.path.join(self.base_path, key)
-                data['etag'] = utils.get_etag(path)
+                try:
+                    data['etag'] = utils.get_etag(path)
+                except Exception as e:
+                    key_errors.append(key)
+                    self.log_error('File: {} - {}'.format(path, e))
+                    continue
                 hashed_bytes += data['size']
                 if hashed_bytes > self.hashed_bytes_threshold:
                     self.cache.write(fs_data)
                     hashed_bytes = 0
                     self.log_info('Hashed files: {}/{}'.format(hashed_files, total_files))
+        for key in key_errors:
+            del fs_data[key]
         self.key_data = fs_data
         self.cache.write(self.key_data)
         self.update_etag()
