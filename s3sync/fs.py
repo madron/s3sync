@@ -123,6 +123,15 @@ class FSEndpoint(BaseEndpoint):
         except Exception as e:
             self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
 
+    def copy(self, key, destination_endpoint):
+        assert(destination_endpoint.type == 'fs')
+        source_path = self.get_path(key)
+        destination_path = destination_endpoint.get_destination_path(key)
+        try:
+            copy2(source_path, destination_path)
+        except Exception as e:
+            self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
+
     def delete(self, key, fake=False):
         self.log_debug(key, log_prefix='delete')
         destination = os.path.join(self.base_path, key)

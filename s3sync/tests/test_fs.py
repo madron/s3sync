@@ -1,4 +1,6 @@
+import io
 import os
+from contextlib import redirect_stdout
 from datetime import datetime
 from io import StringIO
 from tempfile import TemporaryDirectory
@@ -309,6 +311,56 @@ class FSEndpointGetDestinationPathTest(TestCase):
             self.assertEqual(path, os.path.join(backup_dir, 'd1/f1'))
             # file is removed and directory is created
             self.assertTrue(os.path.isdir(dir_name))
+
+
+class FSEndpointCopyTest(TestCase):
+    def test_ok(self):
+        with TemporaryDirectory() as temp_dir:
+            source_dir = os.path.join(temp_dir, 'source')
+            destination_dir = os.path.join(temp_dir, 'destination', 'subdir')
+            # Write source file
+            os.makedirs(source_dir)
+            source_path = os.path.join(source_dir, 'f1')
+            destination_path = os.path.join(destination_dir, 'f1')
+            with open(source_path, 'w') as f:
+                f.write('content')
+            self.assertTrue(os.path.isfile(source_path))
+            # Destination dir does not exist
+            self.assertFalse(os.path.exists(os.path.join(temp_dir, 'destination')))
+            # Endpoints
+            source_endpoint = fs.FSEndpoint(base_path=source_dir, cache_file=StringIO())
+            destination_endpoint = fs.FSEndpoint(base_path=destination_dir, cache_file=StringIO())
+            source_endpoint.copy('f1', destination_endpoint)
+            self.assertTrue(os.path.isfile(destination_path))
+            with open(destination_path, 'r') as f:
+                self.assertEqual(f.read(), 'content')
+
+    def test_ko(self):
+        with TemporaryDirectory() as temp_dir:
+            source_dir = os.path.join(temp_dir, 'source')
+            destination_dir = os.path.join(temp_dir, 'destination', 'subdir')
+            source_path = os.path.join(source_dir, 'f1')
+            destination_path = os.path.join(destination_dir, 'f1')
+            # Source file does not exist
+            self.assertFalse(os.path.exists(source_path))
+            # Endpoints
+            source_endpoint = fs.FSEndpoint(base_path=source_dir, cache_file=StringIO())
+            self.assertFalse(os.path.exists(source_path))
+            destination_endpoint = fs.FSEndpoint(base_path=destination_dir, cache_file=StringIO())
+            # print('test source_path', source_path)
+            self.assertFalse(os.path.exists(source_path))
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                source_endpoint.copy('f1', destination_endpoint)
+            self.assertIn('ERROR <transfer> "f1" [Errno 2] No such file or directory', stdout.getvalue())
+            self.assertFalse(os.path.isfile(destination_path))
+
+    def test_wrong_destination_endpoint(self):
+        source_endpoint = fs.FSEndpoint(cache_file=StringIO())
+        destination_endpoint = fs.FSEndpoint(cache_file=StringIO())
+        destination_endpoint.type = 'notfs'
+        with self.assertRaises(AssertionError):
+            source_endpoint.copy('f1', destination_endpoint)
 
 
 class FSEndpointDeleteTest(TestCase):
