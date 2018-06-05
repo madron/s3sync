@@ -265,6 +265,52 @@ class FSEndpointUpdateKeyDataTest(TestCase):
         endpoint.update_key_data()
 
 
+class FSEndpointGetDestinationPathTest(TestCase):
+    def test_ok(self):
+        with TemporaryDirectory() as backup_dir:
+            endpoint = fs.FSEndpoint(base_path=backup_dir, cache_file=StringIO())
+            path = endpoint.get_destination_path('f1')
+            self.assertEqual(path, os.path.join(backup_dir, 'f1'))
+
+    def test_create_missing_dir(self):
+        with TemporaryDirectory() as backup_dir:
+            dir_name = os.path.join(backup_dir, 'd1')
+            self.assertFalse(os.path.exists(dir_name))
+            endpoint = fs.FSEndpoint(base_path=backup_dir, cache_file=StringIO())
+            path = endpoint.get_destination_path('d1/f1')
+            self.assertEqual(path, os.path.join(backup_dir, 'd1/f1'))
+            self.assertTrue(os.path.isdir(dir_name))
+
+    def test_dir_to_file(self):
+        ' Target path already exist but it is a directory '
+        with TemporaryDirectory() as backup_dir:
+            dir1 = os.path.join(backup_dir, 'd1')
+            dir2 = os.path.join(backup_dir, 'd1', 'f1')
+            os.makedirs(dir2)
+            self.assertTrue(os.path.isdir(dir2))
+            with open(os.path.join(dir2, 'f9'), 'w') as f:
+                f.write('previous content')
+            endpoint = fs.FSEndpoint(base_path=backup_dir, cache_file=StringIO())
+            path = endpoint.get_destination_path('d1/f1')
+            self.assertEqual(path, os.path.join(backup_dir, 'd1/f1'))
+            self.assertTrue(os.path.isdir(dir1))
+            # dir2 tree is removed
+            self.assertFalse(os.path.exists(dir2))
+
+    def test_file_to_dir(self):
+        ' Target path directory already exist but it is file '
+        with TemporaryDirectory() as backup_dir:
+            dir_name = os.path.join(backup_dir, 'd1')
+            with open(dir_name, 'w') as f:
+                f.write('content')
+            self.assertTrue(os.path.isfile(dir_name))
+            endpoint = fs.FSEndpoint(base_path=backup_dir, cache_file=StringIO())
+            path = endpoint.get_destination_path('d1/f1')
+            self.assertEqual(path, os.path.join(backup_dir, 'd1/f1'))
+            # file is removed and directory is created
+            self.assertTrue(os.path.isdir(dir_name))
+
+
 class FSEndpointDeleteTest(TestCase):
     def test_file(self):
         with TemporaryDirectory() as dir:

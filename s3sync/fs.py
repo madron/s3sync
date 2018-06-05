@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 from datetime import datetime
 from operator import itemgetter
 from shutil import copy2
@@ -86,6 +87,21 @@ class FSEndpoint(BaseEndpoint):
 
     def get_path(self, key):
         return os.path.join(self.base_path, key)
+
+    def get_destination_path(self, key):
+        path = self.get_path(key)
+        dir_name = os.path.dirname(path)
+        # Create destination directory
+        if os.path.exists(dir_name):
+            if os.path.isfile(dir_name):
+                os.remove(dir_name)
+                os.makedirs(dir_name)
+        else:
+            os.makedirs(dir_name)
+        # Remove destination path if it's a directory
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        return path
 
     def transfer(self, key, destination_endpoint, fake=False):
         source_path = self.get_path(key)
