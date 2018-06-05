@@ -5,6 +5,7 @@ from datetime import datetime
 from io import StringIO
 from tempfile import TemporaryDirectory
 from unittest import TestCase
+from unittest.mock import patch
 from .. import fs
 
 
@@ -265,6 +266,44 @@ class FSEndpointUpdateKeyDataTest(TestCase):
         ]
         endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO(), hashed_bytes_threshold=20)
         endpoint.update_key_data()
+
+    def test_cache(self):
+        base_path = self.base_path
+        includes = [
+            os.path.join('files'),
+        ]
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        self.assertEqual(endpoint.key_data, dict())
+        # Update key data
+        endpoint.update_key_data()
+        key_data = endpoint.key_data
+        f = key_data['files/f1']
+        self.assertEqual(f['size'], 8)
+        self.assertIsInstance(f['last_modified'], float)
+        self.assertEqual(f['etag'], '16fed0121505838f492d0295ba547558')
+        # Update again
+        endpoint.update_key_data()
+        key_data = endpoint.key_data
+        f = key_data['files/f1']
+        self.assertEqual(f['size'], 8)
+        self.assertIsInstance(f['last_modified'], float)
+        self.assertEqual(f['etag'], '16fed0121505838f492d0295ba547558')
+
+    def test_permission_denied(self):
+        base_path = self.base_path
+        includes = [
+            os.path.join('files', 'f1'),
+        ]
+        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        self.assertEqual(endpoint.key_data, dict())
+        # Update key data
+        stdout = io.StringIO()
+        with patch('s3sync.utils.get_etag') as get_etag, redirect_stdout(stdout):
+            get_etag.side_effect = OSError('Permission denied')
+            endpoint.update_key_data()
+        self.assertEqual(endpoint.key_data, dict())
+        self.assertIn('ERROR <source> File:', stdout.getvalue())
+        self.assertIn('files/f1 - Permission denied', stdout.getvalue())
 
 
 class FSEndpointGetDestinationPathTest(TestCase):
