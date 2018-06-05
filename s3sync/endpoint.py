@@ -10,13 +10,14 @@ class BaseEndpoint(object):
         self.total_bytes = 0
 
     def log_info(self, message, log_prefix=None):
-        log_prefix = log_prefix or self.log_prefix
         if self.verbosity > 0:
+            log_prefix = log_prefix or self.log_prefix
             print('INFO <{}> {}'.format(log_prefix, message))
 
     def log_debug(self, message, log_prefix=None):
-        log_prefix = log_prefix or self.log_prefix
-        print('DEBUG <{}> {}'.format(log_prefix, message))
+        if self.verbosity > 1:
+            log_prefix = log_prefix or self.log_prefix
+            print('DEBUG <{}> {}'.format(log_prefix, message))
 
     def log_error(self, message, log_prefix=None):
         log_prefix = log_prefix or self.log_prefix

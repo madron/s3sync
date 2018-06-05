@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from io import StringIO
+from tempfile import TemporaryDirectory
 from unittest import TestCase
 from .. import fs
 
@@ -158,7 +159,7 @@ class FSEndpointGetFsKeyTest(TestCase):
         )
 
 
-class FilesystemEndpointReadCacheTest(TestCase):
+class FSEndpointReadCacheTest(TestCase):
     def test_empty_1(self):
         cache_file = StringIO()
         endpoint = fs.FSEndpoint(cache_file=cache_file)
@@ -212,7 +213,7 @@ class FilesystemEndpointWriteCacheTest(TestCase):
         self.assertIn('"last_modified": 1527577755.3356848', cache_file.getvalue())
 
 
-class FilesystemEndpointUpdateKeyDataTest(TestCase):
+class FSEndpointUpdateKeyDataTest(TestCase):
     def setUp(self):
         self.base_path = os.path.dirname(__file__)
 
@@ -262,3 +263,28 @@ class FilesystemEndpointUpdateKeyDataTest(TestCase):
         ]
         endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO(), hashed_bytes_threshold=20)
         endpoint.update_key_data()
+
+
+class FSEndpointDeleteTest(TestCase):
+    def test_file(self):
+        with TemporaryDirectory() as dir:
+            file_name = os.path.join(dir, 'f1')
+            with open(file_name, 'w') as f:
+                f.write('content')
+            self.assertTrue(os.path.isfile(file_name))
+            endpoint = fs.FSEndpoint(base_path=dir, cache_file=StringIO())
+            endpoint.delete('f1')
+            self.assertFalse(os.path.exists(file_name))
+
+    def test_empty_dir(self):
+        with TemporaryDirectory() as backup_dir:
+            dir_name = os.path.join(backup_dir, 'd1')
+            file_name = os.path.join(dir_name, 'f1')
+            os.makedirs(dir_name)
+            with open(file_name, 'w') as f:
+                f.write('content')
+            self.assertTrue(os.path.isfile(file_name))
+            endpoint = fs.FSEndpoint(base_path=backup_dir, cache_file=StringIO())
+            endpoint.delete('d1/f1')
+            self.assertFalse(os.path.exists(file_name))
+            self.assertTrue(os.path.isdir(dir_name))

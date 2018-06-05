@@ -87,7 +87,7 @@ class FSEndpoint(BaseEndpoint):
     def get_path(self, key):
         return os.path.join(self.base_path, key)
 
-    def transfer(self, key, destination_endpoint, fake=True):
+    def transfer(self, key, destination_endpoint, fake=False):
         source_path = self.get_path(key)
         if destination_endpoint.type in ['fs', 's3']:
             if not fake:
@@ -107,12 +107,11 @@ class FSEndpoint(BaseEndpoint):
         except Exception as e:
             self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
 
-    def delete(self, key, fake=True):
+    def delete(self, key, fake=False):
         self.log_debug(key, log_prefix='delete')
         destination = os.path.join(self.base_path, key)
         if not fake:
             try:
                 os.remove(destination)
             except Exception as e:
-                self.log_error('"{}" {}'.format(
-                    key, e), log_prefix='delete')
+                self.log_error('"{}" {}'.format(key, e), log_prefix='delete')
