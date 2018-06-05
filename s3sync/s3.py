@@ -12,10 +12,31 @@ class S3Endpoint(BaseEndpoint):
         self.type = 's3'
         self.bucket = None
 
+    def get_profile(self, env_first=False):
+        env = dict()
+        if self.profile_name == 'default':
+            aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
+            aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+            region_name = os.getenv('REGION_NAME')
+            endpoint_url = os.getenv('ENDPOINT_URL')
+            if aws_access_key_id:
+                env['aws_access_key_id'] = aws_access_key_id
+            if aws_secret_access_key:
+                env['aws_secret_access_key'] = aws_secret_access_key
+            if region_name:
+                env['region_name'] = region_name
+            if endpoint_url:
+                env['endpoint_url'] = endpoint_url
+        config_profiles = botocore.session.get_session().full_config['profiles']
+        cfg = config_profiles.get(self.profile_name, dict())
+        first, second = (env, cfg) if env_first else (cfg, env)
+        second.update(first)
+        return second
+
     def get_bucket(self):
         if self.bucket:
             return self.bucket
-        profile = botocore.session.get_session().full_config['profiles'][self.profile_name]
+        profile = self.get_profile()
         self.bucket = boto3.resource('s3', **profile).Bucket(self.bucket_name)
         return self.bucket
 
