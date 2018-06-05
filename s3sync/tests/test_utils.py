@@ -22,22 +22,22 @@ class GetEtagTest(TestCase):
 
 class ParseS3UrlTest(TestCase):
     def test_profile_bucket(self):
-        profile, bucket, path = utils.parse_s3_url('default:bucket1')
-        self.assertEqual(profile, 'default')
-        self.assertEqual(bucket, 'bucket1')
-        self.assertEqual(path, '')
+        profile_name, bucket_name, base_path = utils.parse_s3_url('default:bucket1')
+        self.assertEqual(profile_name, 'default')
+        self.assertEqual(bucket_name, 'bucket1')
+        self.assertEqual(base_path, '')
 
     def test_profile_bucket_path(self):
-        profile, bucket, path = utils.parse_s3_url('default:bucket1/attic')
-        self.assertEqual(profile, 'default')
-        self.assertEqual(bucket, 'bucket1')
-        self.assertEqual(path, 'attic')
+        profile_name, bucket_name, base_path = utils.parse_s3_url('default:bucket1/attic')
+        self.assertEqual(profile_name, 'default')
+        self.assertEqual(bucket_name, 'bucket1')
+        self.assertEqual(base_path, 'attic')
 
     def test_profile_bucket_path_slash(self):
-        profile, bucket, path = utils.parse_s3_url('minio:bck2/attic/')
-        self.assertEqual(profile, 'minio')
-        self.assertEqual(bucket, 'bck2')
-        self.assertEqual(path, 'attic')
+        profile_name, bucket_name, base_path = utils.parse_s3_url('minio:bck2/attic/')
+        self.assertEqual(profile_name, 'minio')
+        self.assertEqual(bucket_name, 'bck2')
+        self.assertEqual(base_path, 'attic')
 
 
 class GetOperationsTest(TestCase):

@@ -22,15 +22,15 @@ def get_etag(filename, chunk_size=CHUNK_SIZE):
 
 
 def parse_s3_url(url):
-    profile, bucket_path = url.split(':', 1)
+    profile_name, bucket_path = url.split(':', 1)
     parts = bucket_path.split('/', 1)
     if len(parts) == 1:
-        bucket = parts[0]
-        path = ''
+        bucket_name = parts[0]
+        base_path = ''
     else:
-        bucket = parts[0]
-        path = parts[1].rstrip('/')
-    return profile, bucket, path
+        bucket_name = parts[0]
+        base_path = parts[1].rstrip('/')
+    return profile_name, bucket_name, base_path
 
 
 def get_operations(source, destination):

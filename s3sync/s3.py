@@ -7,16 +7,15 @@ from .endpoint import BaseEndpoint
 
 class S3Endpoint(BaseEndpoint):
     def __init__(self, base_url=None, **kwargs):
-        self.profile, self.bucket_name, self.base_path = utils.parse_s3_url( base_url)
-        super().__init__(log_prefix=self.profile, **kwargs)
-        self.bucket = None
+        self.profile_name, self.bucket_name, self.base_path = utils.parse_s3_url( base_url)
+        super().__init__(log_prefix=self.profile_name, **kwargs)
         self.type = 's3'
-        self.log_info('profile: "{}"  bucket: "{}"  path: "{}"'.format( self.profile, self.bucket_name, self.base_path))
+        self.bucket = None
 
     def get_bucket(self):
         if self.bucket:
             return self.bucket
-        profile = botocore.session.get_session().full_config['profiles'][self.profile]
+        profile = botocore.session.get_session().full_config['profiles'][self.profile_name]
         self.bucket = boto3.resource('s3', **profile).Bucket(self.bucket_name)
         return self.bucket
 
