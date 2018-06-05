@@ -104,24 +104,16 @@ class FSEndpoint(BaseEndpoint):
         return path
 
     def transfer(self, key, destination_endpoint, fake=False):
-        source_path = self.get_path(key)
-        if destination_endpoint.type in ['fs', 's3']:
+        if destination_endpoint.type == 'fs':
             if not fake:
+                self.copy(key, destination_endpoint)
+        elif destination_endpoint.type == 's3':
+            if not fake:
+                source_path = self.get_path(key)
                 destination_endpoint.upload(key, source_path)
         else:
             raise NotImplementedError()
         self.log_info(key, log_prefix='transfer')
-
-    def upload(self, key, source_path):
-        destination_path = self.get_path(key)
-        try:
-            try:
-                copy2(source_path, destination_path)
-            except FileNotFoundError:
-                os.makedirs(os.path.dirname(destination_path))
-                copy2(source_path, destination_path)
-        except Exception as e:
-            self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
 
     def copy(self, key, destination_endpoint):
         assert(destination_endpoint.type == 'fs')

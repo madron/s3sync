@@ -313,6 +313,26 @@ class FSEndpointGetDestinationPathTest(TestCase):
             self.assertTrue(os.path.isdir(dir_name))
 
 
+class FSEndpointTransferTest(TestCase):
+    def test_fs(self):
+        with TemporaryDirectory() as source_dir, TemporaryDirectory() as destination_dir:
+            source_path = os.path.join(source_dir, 'f1')
+            destination_path = os.path.join(destination_dir, 'f1')
+            with open(source_path, 'w') as f:
+                f.write('content')
+            source_endpoint = fs.FSEndpoint(base_path=source_dir, cache_file=StringIO())
+            destination_endpoint = fs.FSEndpoint(base_path=destination_dir, cache_file=StringIO())
+            source_endpoint.transfer('f1', destination_endpoint)
+            self.assertTrue(os.path.isfile(destination_path))
+
+    def test_wrong_destination_endpoint(self):
+        source_endpoint = fs.FSEndpoint(cache_file=StringIO())
+        destination_endpoint = fs.FSEndpoint(cache_file=StringIO())
+        destination_endpoint.type = 'unsupported'
+        with self.assertRaises(NotImplementedError):
+            source_endpoint.transfer('f1', destination_endpoint)
+
+
 class FSEndpointCopyTest(TestCase):
     def test_ok(self):
         with TemporaryDirectory() as temp_dir:
@@ -373,6 +393,16 @@ class FSEndpointDeleteTest(TestCase):
             endpoint = fs.FSEndpoint(base_path=dir, cache_file=StringIO())
             endpoint.delete('f1')
             self.assertFalse(os.path.exists(file_name))
+
+    def test_file_does_not_exist(self):
+        with TemporaryDirectory() as dir:
+            file_name = os.path.join(dir, 'f1')
+            self.assertFalse(os.path.exists(file_name))
+            endpoint = fs.FSEndpoint(base_path=dir, cache_file=StringIO())
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                endpoint.delete('f1')
+            self.assertIn('ERROR <delete> "f1" [Errno 2] No such file or directory', stdout.getvalue())
 
     def test_empty_dir(self):
         with TemporaryDirectory() as backup_dir:
