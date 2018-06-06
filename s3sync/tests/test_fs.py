@@ -425,7 +425,6 @@ class FSEndpointCopyTest(TestCase):
             source_endpoint = FSEndpoint(base_path=source_dir, cache_file=StringIO())
             self.assertFalse(os.path.exists(source_path))
             destination_endpoint = FSEndpoint(base_path=destination_dir, cache_file=StringIO())
-            # print('test source_path', source_path)
             self.assertFalse(os.path.exists(source_path))
             stdout = io.StringIO()
             with redirect_stdout(stdout):

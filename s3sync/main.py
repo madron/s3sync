@@ -4,7 +4,7 @@ from .constants import DEFAULT_CACHE_DIR
 from .sync import SyncManager
 
 
-def main():
+def main(args):
     parser = ArgumentParser(description='S3 sync')
     parser.add_argument('--source', type=str, default=DEFAULT_SOURCE,
         help='Source endpoint, default: {}'.format(DEFAULT_SOURCE))
@@ -21,7 +21,8 @@ def main():
         default=1, help='Verbosity level', metavar='N')
     parser.add_argument('--fake', dest='fake', action='store_true', help='Fake run')
 
-    options = vars(parser.parse_args())
+    options = vars(parser.parse_args(args))
 
     manager = SyncManager(**options)
     manager.sync()
+    return 0

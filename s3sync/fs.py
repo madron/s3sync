@@ -132,3 +132,4 @@ class FSEndpoint(BaseEndpoint):
                 os.remove(destination)
             except Exception as e:
                 self.log_error('"{}" {}'.format(key, e), log_prefix='delete')
+        self.log_info(key, log_prefix='delete')
