@@ -61,15 +61,6 @@ class S3Endpoint(BaseEndpoint):
     def get_path(self, key):
         return os.path.join(self.base_path, key)
 
-    def transfer(self, key, destination_endpoint, fake=False):
-        source_path = self.get_path(key)
-        if destination_endpoint.type == 'fs':
-            if not fake:
-                self.download(key, destination_endpoint.get_destination_path(key))
-        else:
-            raise NotImplementedError()
-        self.log_info(key, log_prefix='transfer')
-
     def upload(self, key, source_path):
         s3_path = self.get_path(key)
         try:

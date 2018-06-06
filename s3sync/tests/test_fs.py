@@ -355,42 +355,6 @@ class FSEndpointGetDestinationPathTest(TestCase):
             self.assertTrue(os.path.isdir(dir_name))
 
 
-class FSEndpointTransferTest(TestCase):
-    def test_fs(self):
-        with TemporaryDirectory() as source_dir, TemporaryDirectory() as destination_dir:
-            source_path = os.path.join(source_dir, 'f1')
-            destination_path = os.path.join(destination_dir, 'f1')
-            with open(source_path, 'w') as f:
-                f.write('content')
-            source_endpoint = FSEndpoint(base_path=source_dir, cache_file=StringIO())
-            destination_endpoint = FSEndpoint(base_path=destination_dir, cache_file=StringIO())
-            source_endpoint.transfer('f1', destination_endpoint)
-            self.assertTrue(os.path.isfile(destination_path))
-
-    @mock_s3
-    def test_s3(self):
-        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
-        destination_endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
-        with TemporaryDirectory() as source_dir:
-            source_endpoint = FSEndpoint(base_path=source_dir, cache_file=StringIO())
-            path = source_endpoint.get_path('f1')
-            with open(path, 'w') as f:
-                f.write('content')
-            self.assertTrue(os.path.isfile(path))
-            source_endpoint.transfer('f1', destination_endpoint)
-        obj = bucket.Object('path/f1').get()
-        self.assertEqual(obj['ETag'], '"9a0364b9e99bb480dd25e1f0284c8555"')
-        self.assertEqual(obj['ContentLength'], 7)
-        self.assertEqual(obj['Body'].read(), b'content')
-
-    def test_wrong_destination_endpoint(self):
-        source_endpoint = FSEndpoint(cache_file=StringIO())
-        destination_endpoint = FSEndpoint(cache_file=StringIO())
-        destination_endpoint.type = 'unsupported'
-        with self.assertRaises(NotImplementedError):
-            source_endpoint.transfer('f1', destination_endpoint)
-
-
 class FSEndpointCopyTest(TestCase):
     def test_ok(self):
         with TemporaryDirectory() as temp_dir:

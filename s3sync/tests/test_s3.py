@@ -98,26 +98,6 @@ class S3EndpointGetPathTest(TestCase):
         self.assertEqual(path, 'path/d1/f1')
 
 
-class S3EndpointTransferTest(TestCase):
-    @mock_s3
-    def test_ok(self):
-        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
-        bucket.put_object(Key='path/f1', Body='content')
-        source_endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
-        with TemporaryDirectory() as destination_dir:
-            destination_endpoint = FSEndpoint(base_path=destination_dir, includes=[''])
-            source_endpoint.transfer('f1', destination_endpoint)
-            destination_path = destination_endpoint.get_path('f1')
-            self.assertTrue(os.path.isfile(destination_path))
-
-    def test_wrong_destination_endpoint(self):
-        source_endpoint = S3Endpoint(base_url='default:bucket/path')
-        destination_endpoint = S3Endpoint(base_url='default:bucket/path')
-        destination_endpoint.type = 'unsupported'
-        with self.assertRaises(NotImplementedError):
-            source_endpoint.transfer('f1', destination_endpoint)
-
-
 class S3EndpointUploadTest(TestCase):
     @mock_s3
     def test_ok(self):

@@ -1,18 +1,20 @@
 from .import utils
 from .fs import FSEndpoint
+from .logger import Logger
 from .s3 import S3Endpoint
 
 
-class SyncManager(object):
-    def __init__(self, fake=False, **kwargs):
+class SyncManager(Logger):
+    def __init__(self, fake=False, verbosity=0, **kwargs):
+        super().__init__(log_prefix='SyncManager', verbosity=verbosity)
         self.fake = fake
-        self.log_prefix = 'sync'
         self.source = self.get_endpoint(kwargs['source'], 'source', **kwargs)
         self.destination = self.get_endpoint(kwargs['destination'], 'destination', **kwargs)
 
     def get_endpoint(self, path, name, **kwargs):
         keys = ['includes', 'excludes', 'verbosity']
         options = {k: kwargs[k] for k in keys if k in kwargs}
+        options['verbosity'] = self.verbosity
         if path.startswith('/'):
             options['name'] = name
             options['base_path'] = path
@@ -33,6 +35,20 @@ class SyncManager(object):
         self.destination.update_key_data()
         operations = self.get_operations()
         for key in operations['transfer']:
-            self.source.transfer(key, self.destination, fake=self.fake)
+            self.transfer(key, fake=self.fake)
         for key in operations['delete']:
             self.destination.delete(key, fake=self.fake)
+
+    def transfer(self, key, fake=False):
+        if not fake:
+            if self.source.type == 'fs' and self.destination.type == 'fs':
+                self.source.copy(key, self.destination)
+            elif self.source.type == 'fs' and self.destination.type == 's3':
+                source_path = self.source.get_path(key)
+                self.destination.upload(key, source_path)
+            elif self.source.type == 's3' and self.destination.type == 'fs':
+                destination_path = self.destination.get_destination_path(key)
+                self.source.download(key, destination_path)
+            else:
+                raise NotImplementedError()
+        self.log_info(key, log_prefix='transfer')

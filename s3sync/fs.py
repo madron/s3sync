@@ -103,18 +103,6 @@ class FSEndpoint(BaseEndpoint):
             shutil.rmtree(path)
         return path
 
-    def transfer(self, key, destination_endpoint, fake=False):
-        if destination_endpoint.type == 'fs':
-            if not fake:
-                self.copy(key, destination_endpoint)
-        elif destination_endpoint.type == 's3':
-            if not fake:
-                source_path = self.get_path(key)
-                destination_endpoint.upload(key, source_path)
-        else:
-            raise NotImplementedError()
-        self.log_info(key, log_prefix='transfer')
-
     def copy(self, key, destination_endpoint):
         assert(destination_endpoint.type == 'fs')
         source_path = self.get_path(key)
