@@ -17,6 +17,8 @@ def main(args):
         default=[''], help='Paths to include, if not specified it will sync everything in source path')
     parser.add_argument('--exclude', dest='excludes', type=str, nargs='*',
         default=[], help='paths to exclude', metavar='PATH')
+    parser.add_argument('--watch', dest='watch',
+                        action='store_true', help='Watch for changes')
     parser.add_argument('-v', '--verbosity', dest='verbosity', type=int,
         default=1, help='Verbosity level', metavar='N')
     parser.add_argument('--fake', dest='fake', action='store_true', help='Fake run')
@@ -25,4 +27,6 @@ def main(args):
 
     manager = SyncManager(**options)
     manager.sync()
+    if options['watch']:
+        manager.watch()
     return 0

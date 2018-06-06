@@ -1,3 +1,4 @@
+import time
 from .import utils
 from .fs import FSEndpoint
 from .logger import Logger
@@ -52,3 +53,13 @@ class SyncManager(Logger):
             else:
                 raise NotImplementedError()
         self.log_info(key, log_prefix='transfer')
+
+    def watch(self, milliseconds=0):
+        if milliseconds:
+            time.sleep(milliseconds / 1000)
+        else:
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
