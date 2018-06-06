@@ -29,3 +29,9 @@ class BaseEndpoint(Logger):
 
     def delete(self, key):
         raise NotImplementedError()
+
+    def observer_start(self, events_queue):
+        raise NotImplementedError()
+
+    def observer_stop(self):
+        raise NotImplementedError()

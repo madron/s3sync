@@ -1,9 +1,12 @@
 import io
 import os
+import shutil
+import time
 import boto3
 from contextlib import redirect_stdout
 from datetime import datetime
 from io import StringIO
+from queue import Queue
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
@@ -437,3 +440,226 @@ class FSEndpointDeleteTest(TestCase):
             endpoint.delete('d1/f1')
             self.assertFalse(os.path.exists(file_name))
             self.assertTrue(os.path.isdir(dir_name))
+
+
+class FSEndpointObserverTest(TestCase):
+    def test_1(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            dir1 = os.path.join(backup_dir, 'd1')
+            dir2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(dir1)
+            os.makedirs(dir2)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=['d1', 'd2'],
+                cache_file=StringIO(),
+            )
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            file_path = endpoint.get_path('d1/f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            os.sync()
+            time.sleep(0.5)
+            self.assertEqual(events_queue.qsize(), 1)
+            event = events_queue.get()
+            self.assertEqual(event['type'], 'modified')
+            self.assertEqual(event['key'], 'd1/f1')
+            endpoint.observer_stop()
+
+    def test_2(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            dir1 = os.path.join(backup_dir, 'd1')
+            dir2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(dir1)
+            os.makedirs(dir2)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=['d1', 'd2'],
+                cache_file=StringIO(),
+            )
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            file_path = endpoint.get_path('d1/f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            file_path = endpoint.get_path('d2/f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            os.sync()
+            time.sleep(0.5)
+            self.assertEqual(events_queue.qsize(), 2)
+            event = events_queue.get()
+            self.assertEqual(event['type'], 'modified')
+            self.assertEqual(event['key'], 'd1/f1')
+            event = events_queue.get()
+            self.assertEqual(event['type'], 'modified')
+            self.assertEqual(event['key'], 'd2/f1')
+            endpoint.observer_stop()
+
+    def test_outside_base(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            base_path = os.path.join(backup_dir, 'd1')
+            os.makedirs(base_path)
+            endpoint = FSEndpoint(
+                base_path=base_path,
+                includes=[''],
+                cache_file=StringIO(),
+            )
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            file_path = os.path.join(backup_dir, 'f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            os.sync()
+            time.sleep(0.5)
+            self.assertEqual(events_queue.qsize(), 0)
+            endpoint.observer_stop()
+
+    def test_not_included(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            d1 = os.path.join(backup_dir, 'd1')
+            d2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(d1)
+            os.makedirs(d2)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=['d1'],
+                cache_file=StringIO(),
+            )
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            file_path = os.path.join(backup_dir, 'd2', 'f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            os.sync()
+            time.sleep(0.5)
+            self.assertEqual(events_queue.qsize(), 0)
+            endpoint.observer_stop()
+
+    def test_excluded_1(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            d1 = os.path.join(backup_dir, 'd1')
+            d2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(d1)
+            os.makedirs(d2)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=[''],
+                excludes=['d2'],
+                cache_file=StringIO(),
+            )
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            file_path = os.path.join(backup_dir, 'd2', 'f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            os.sync()
+            time.sleep(0.5)
+            self.assertEqual(events_queue.qsize(), 0)
+            endpoint.observer_stop()
+
+    def test_excluded_2(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            d1 = os.path.join(backup_dir, 'd1')
+            d2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(d1)
+            os.makedirs(d2)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=[''],
+                excludes=['d1'],
+                cache_file=StringIO(),
+            )
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            file_path = os.path.join(backup_dir, 'd2', 'f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            os.sync()
+            time.sleep(0.5)
+            self.assertEqual(events_queue.qsize(), 1)
+            event = events_queue.get()
+            self.assertEqual(event['type'], 'modified')
+            self.assertEqual(event['key'], 'd2/f1')
+            endpoint.observer_stop()
+
+    def test_delete_file(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=[''],
+                cache_file=StringIO(),
+            )
+            file_path = endpoint.get_path('f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            # Remove file
+            os.remove(file_path)
+            os.sync()
+            time.sleep(0.5)
+            self.assertEqual(events_queue.qsize(), 1)
+            event = events_queue.get()
+            self.assertEqual(event['type'], 'deleted')
+            self.assertEqual(event['key'], 'f1')
+            endpoint.observer_stop()
+
+    def test_delete_directory(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            d1 = os.path.join(backup_dir, 'd1')
+            os.makedirs(d1)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=[''],
+                cache_file=StringIO(),
+            )
+            file_path = endpoint.get_path('d1/f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            # Remove directory
+            shutil.rmtree(d1)
+            os.sync()
+            time.sleep(0.5)
+            self.assertEqual(events_queue.qsize(), 1)
+            event = events_queue.get()
+            self.assertEqual(event['type'], 'deleted')
+            self.assertEqual(event['key'], 'd1/f1')
+            endpoint.observer_stop()
+
+    def test_delete_excluded(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            d1 = os.path.join(backup_dir, 'd1')
+            d2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(d1)
+            os.makedirs(d2)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=[''],
+                excludes=['d2'],
+                cache_file=StringIO(),
+            )
+            file_path = os.path.join(backup_dir, 'd2', 'f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            # Remove file
+            os.remove(file_path)
+            os.sync()
+            time.sleep(0.5)
+            self.assertEqual(events_queue.qsize(), 0)
+            endpoint.observer_stop()
+

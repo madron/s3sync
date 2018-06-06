@@ -57,3 +57,13 @@ class BaseEndpointTest(TestCase):
         endpoint = BaseEndpoint()
         with self.assertRaises(NotImplementedError):
             endpoint.delete('f1')
+
+    def test_observer_start(self):
+        endpoint = BaseEndpoint()
+        with self.assertRaises(NotImplementedError):
+            endpoint.observer_start(None)
+
+    def test_observer_stop(self):
+        endpoint = BaseEndpoint()
+        with self.assertRaises(NotImplementedError):
+            endpoint.observer_stop()

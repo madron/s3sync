@@ -1,4 +1,5 @@
 import time
+from queue import Queue
 from .import utils
 from .fs import FSEndpoint
 from .logger import Logger
@@ -11,6 +12,8 @@ class SyncManager(Logger):
         self.fake = fake
         self.source = self.get_endpoint(kwargs['source'], 'source', **kwargs)
         self.destination = self.get_endpoint(kwargs['destination'], 'destination', **kwargs)
+        self.source_queue = Queue()
+        self.destination_queue = Queue()
 
     def get_endpoint(self, path, name, **kwargs):
         keys = ['includes', 'excludes', 'verbosity']
@@ -54,12 +57,12 @@ class SyncManager(Logger):
                 raise NotImplementedError()
         self.log_info(key, log_prefix='transfer')
 
-    def watch(self, milliseconds=0):
-        if milliseconds:
-            time.sleep(milliseconds / 1000)
-        else:
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                pass
+    def watch(self):
+        self.source.observer_start(self.source_queue)
+        self.destination.observer_start(self.destination_queue)
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            pass
+        self.source.observer_stop()

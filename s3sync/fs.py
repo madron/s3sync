@@ -4,13 +4,15 @@ import shutil
 from datetime import datetime
 from operator import itemgetter
 from shutil import copy2
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 from . import utils
 from .cache import Cache
 from .constants import HASHED_BYTES_THRESHOLD
 from .endpoint import BaseEndpoint
 
 
-class FSEndpoint(BaseEndpoint):
+class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
     def __init__(self, name='source', base_path='/', cache_dir=None, cache_file=None,
                  hashed_bytes_threshold=HASHED_BYTES_THRESHOLD, **kwargs):
         super().__init__(log_prefix=name, **kwargs)
@@ -121,3 +123,32 @@ class FSEndpoint(BaseEndpoint):
             except Exception as e:
                 self.log_error('"{}" {}'.format(key, e), log_prefix='delete')
         self.log_info(key, log_prefix='delete')
+
+    def on_any_event(self, event):
+        self.log_debug(event)
+
+    def on_modified(self, event):
+        if not event.is_directory:
+            key = event.src_path.replace(self.base_path, '', 1).lstrip('/')
+            if not self.is_excluded(key):
+                event = dict(type='modified', key=key)
+                self.events_queue.put(event)
+
+    def on_deleted(self, event):
+        if not event.is_directory:
+            key = event.src_path.replace(self.base_path, '', 1).lstrip('/')
+            if not self.is_excluded(key):
+                event = dict(type='deleted', key=key)
+                self.events_queue.put(event)
+
+    def observer_start(self, events_queue):
+        self.events_queue = events_queue
+        self.observer = Observer()
+        for include in self.includes:
+            path = os.path.join(self.base_path, include)
+            self.observer.schedule(self, path, recursive=True)
+        self.observer.start()
+
+    def observer_stop(self):
+        self.observer.stop()
+        self.observer.join()
