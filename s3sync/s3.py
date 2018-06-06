@@ -61,11 +61,11 @@ class S3Endpoint(BaseEndpoint):
     def get_path(self, key):
         return os.path.join(self.base_path, key)
 
-    def transfer(self, key, destination_endpoint, fake=True):
+    def transfer(self, key, destination_endpoint, fake=False):
         source_path = self.get_path(key)
         if destination_endpoint.type == 'fs':
             if not fake:
-                self.download(key, destination_endpoint.get_path(key))
+                self.download(key, destination_endpoint.get_destination_path(key))
         else:
             raise NotImplementedError()
         self.log_info(key, log_prefix='transfer')
@@ -80,14 +80,11 @@ class S3Endpoint(BaseEndpoint):
     def download(self, key, destination_path):
         s3_path = self.get_path(key)
         try:
-            destination_dir = os.path.dirname(destination_path)
-            if not os.path.isdir(destination_dir):
-                os.makedirs(destination_dir)
             self.get_bucket().Object(s3_path).download_file(destination_path)
         except Exception as e:
             self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
 
-    def delete(self, key, fake=True):
+    def delete(self, key, fake=False):
         if not fake:
             destination = '{}/{}'.format(self.base_path, key)
             try:
