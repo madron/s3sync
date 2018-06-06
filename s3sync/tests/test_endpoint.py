@@ -1,3 +1,5 @@
+import io
+from contextlib import redirect_stdout
 from unittest import TestCase
 from ..endpoint import BaseEndpoint
 
@@ -24,3 +26,34 @@ class BaseEndpointTest(TestCase):
         endpoint.update_totals()
         self.assertEqual(endpoint.total_files, 2)
         self.assertEqual(endpoint.total_bytes, 3)
+
+    def test_log_info(self):
+        endpoint = BaseEndpoint(log_prefix='s3sync', verbosity=10)
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            endpoint.log_info('text')
+        self.assertEqual(stdout.getvalue(), 'INFO <s3sync> text\n')
+
+    def test_log_debug(self):
+        endpoint = BaseEndpoint(log_prefix='s3sync', verbosity=10)
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            endpoint.log_debug('text')
+        self.assertEqual(stdout.getvalue(), 'DEBUG <s3sync> text\n')
+
+    def test_log_error(self):
+        endpoint = BaseEndpoint(log_prefix='s3sync', verbosity=0)
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            endpoint.log_error('text')
+        self.assertEqual(stdout.getvalue(), 'ERROR <s3sync> text\n')
+
+    def test_transfer(self):
+        endpoint = BaseEndpoint()
+        with self.assertRaises(NotImplementedError):
+            endpoint.transfer('f1', None)
+
+    def test_delete(self):
+        endpoint = BaseEndpoint()
+        with self.assertRaises(NotImplementedError):
+            endpoint.delete('f1')
