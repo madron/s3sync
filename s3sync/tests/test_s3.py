@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 from test.support import EnvironmentVarGuard
 from unittest import TestCase
 from moto import mock_s3
+from .. import utils
 from ..fs import FSEndpoint
 from ..s3 import S3Endpoint
 
@@ -146,3 +147,20 @@ class S3EndpointUploadTest(TestCase):
                 endpoint.upload('f1', path)
         self.assertIn('ERROR <transfer> "f1" Failed to upload', stdout.getvalue())
         self.assertIn('An error occurred (NoSuchBucket) when calling the PutObject operation', stdout.getvalue())
+
+
+class S3EndpointDownloadTest(TestCase):
+    @mock_s3
+    def test_ok(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        obj = bucket.put_object(Key='path/f1', Body='content').get()
+        self.assertEqual(obj['ETag'], '"9a0364b9e99bb480dd25e1f0284c8555"')
+        source_endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
+        with TemporaryDirectory() as destination_dir:
+            destination_path = os.path.join(destination_dir, 'f1')
+            source_endpoint.download('f1', destination_path)
+            self.assertTrue(os.path.isfile(destination_path))
+            with open(destination_path, 'r') as f:
+                self.assertEqual(f.read(), 'content')
+            etag = utils.get_etag(destination_path)
+            self.assertEqual(etag, '9a0364b9e99bb480dd25e1f0284c8555')
