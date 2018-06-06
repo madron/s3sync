@@ -1,12 +1,15 @@
 import io
 import os
+import boto3
 from contextlib import redirect_stdout
 from datetime import datetime
 from io import StringIO
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
-from .. import fs
+from moto import mock_s3
+from ..fs import FSEndpoint
+from ..s3 import S3Endpoint
 
 
 class FSEndpointGetFsKeyTest(TestCase):
@@ -14,7 +17,7 @@ class FSEndpointGetFsKeyTest(TestCase):
         self.base_path = os.path.dirname(__file__)
 
     def test_get_path_data(self):
-        endpoint = fs.FSEndpoint(base_path=self.base_path, cache_file=StringIO())
+        endpoint = FSEndpoint(base_path=self.base_path, cache_file=StringIO())
         file_data = endpoint.get_path_data('files')
         f = file_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
@@ -37,7 +40,7 @@ class FSEndpointGetFsKeyTest(TestCase):
         includes = [
             'files',
         ]
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
@@ -61,7 +64,7 @@ class FSEndpointGetFsKeyTest(TestCase):
         includes = [
             os.path.join('files', 'd1'),
         ]
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
@@ -77,7 +80,7 @@ class FSEndpointGetFsKeyTest(TestCase):
             os.path.join('files', 'd1'),
             os.path.join('files', 'd2'),
         ]
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         f = key_data['files/d1/f1']
         self.assertEqual(f['size'], 14)
@@ -98,7 +101,7 @@ class FSEndpointGetFsKeyTest(TestCase):
         includes = [
             '',
         ]
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         f = key_data['d1/f1']
         self.assertEqual(f['size'], 14)
@@ -122,7 +125,7 @@ class FSEndpointGetFsKeyTest(TestCase):
         includes = [
             os.path.join('files', 'f1'),
         ]
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         f = key_data['files/f1']
         self.assertEqual(f['size'], 8)
@@ -138,7 +141,7 @@ class FSEndpointGetFsKeyTest(TestCase):
         excludes = [
             os.path.join('files', 'f1'),
         ]
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         self.assertEqual(
             sorted(list(key_data.keys())),
@@ -154,7 +157,7 @@ class FSEndpointGetFsKeyTest(TestCase):
         excludes = [
             os.path.join('files', 'd2', 'f1'),
         ]
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, excludes=excludes, cache_file=StringIO())
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, excludes=excludes, cache_file=StringIO())
         key_data = endpoint.get_fs_key_data()
         self.assertEqual(
             sorted(list(key_data.keys())),
@@ -165,21 +168,21 @@ class FSEndpointGetFsKeyTest(TestCase):
 class FSEndpointReadCacheTest(TestCase):
     def test_empty_1(self):
         cache_file = StringIO()
-        endpoint = fs.FSEndpoint(cache_file=cache_file)
+        endpoint = FSEndpoint(cache_file=cache_file)
         self.assertEqual(endpoint.key_data, dict())
         endpoint.key_data = endpoint.cache.read()
         self.assertEqual(endpoint.key_data, dict())
 
     def test_empty_2(self):
         cache_file = StringIO('{}')
-        endpoint = fs.FSEndpoint(cache_file=cache_file)
+        endpoint = FSEndpoint(cache_file=cache_file)
         self.assertEqual(endpoint.key_data, dict())
         endpoint.key_data = endpoint.cache.read()
         self.assertEqual(endpoint.key_data, dict())
 
     def test_1(self):
         cache_file = StringIO('{"include": {"files/f1": {"size": 8, "etag": "hash", "last_modified": 1527577755.3356848}}}')
-        endpoint = fs.FSEndpoint(cache_file=cache_file)
+        endpoint = FSEndpoint(cache_file=cache_file)
         endpoint.key_data = dict()
         endpoint.key_data = endpoint.cache.read()
         self.assertEqual(
@@ -191,21 +194,21 @@ class FSEndpointReadCacheTest(TestCase):
 class FilesystemEndpointWriteCacheTest(TestCase):
     def test_empty(self):
         cache_file = StringIO()
-        endpoint = fs.FSEndpoint(cache_file=cache_file)
+        endpoint = FSEndpoint(cache_file=cache_file)
         endpoint.key_data = dict()
         endpoint.cache.write(endpoint.key_data)
         self.assertEqual(cache_file.getvalue() , '{}')
 
     def test_1(self):
         cache_file = StringIO()
-        endpoint = fs.FSEndpoint(cache_file=cache_file)
+        endpoint = FSEndpoint(cache_file=cache_file)
         endpoint.key_data = dict(name='Bob')
         endpoint.cache.write(endpoint.key_data)
         self.assertIn('"name": "Bob"', cache_file.getvalue())
 
     def test_2(self):
         cache_file = StringIO()
-        endpoint = fs.FSEndpoint(cache_file=cache_file)
+        endpoint = FSEndpoint(cache_file=cache_file)
         endpoint.key_data = {
             'files/f1': dict(size=8, etag='hash', last_modified=1527577755.3356848),
         }
@@ -227,7 +230,7 @@ class FSEndpointUpdateKeyDataTest(TestCase):
             os.path.join('files', 'f1'),
         ]
         cache_file=StringIO()
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=cache_file)
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, cache_file=cache_file)
         self.assertEqual(endpoint.key_data, dict())
         endpoint.update_key_data()
         key_data = endpoint.key_data
@@ -264,7 +267,7 @@ class FSEndpointUpdateKeyDataTest(TestCase):
         includes = [
             os.path.join('files'),
         ]
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO(), hashed_bytes_threshold=20)
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO(), hashed_bytes_threshold=20)
         endpoint.update_key_data()
 
     def test_cache(self):
@@ -272,7 +275,7 @@ class FSEndpointUpdateKeyDataTest(TestCase):
         includes = [
             os.path.join('files'),
         ]
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         self.assertEqual(endpoint.key_data, dict())
         # Update key data
         endpoint.update_key_data()
@@ -294,7 +297,7 @@ class FSEndpointUpdateKeyDataTest(TestCase):
         includes = [
             os.path.join('files', 'f1'),
         ]
-        endpoint = fs.FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
+        endpoint = FSEndpoint(base_path=base_path, includes=includes, cache_file=StringIO())
         self.assertEqual(endpoint.key_data, dict())
         # Update key data
         stdout = io.StringIO()
@@ -309,7 +312,7 @@ class FSEndpointUpdateKeyDataTest(TestCase):
 class FSEndpointGetDestinationPathTest(TestCase):
     def test_ok(self):
         with TemporaryDirectory() as backup_dir:
-            endpoint = fs.FSEndpoint(base_path=backup_dir, cache_file=StringIO())
+            endpoint = FSEndpoint(base_path=backup_dir, cache_file=StringIO())
             path = endpoint.get_destination_path('f1')
             self.assertEqual(path, os.path.join(backup_dir, 'f1'))
 
@@ -317,7 +320,7 @@ class FSEndpointGetDestinationPathTest(TestCase):
         with TemporaryDirectory() as backup_dir:
             dir_name = os.path.join(backup_dir, 'd1')
             self.assertFalse(os.path.exists(dir_name))
-            endpoint = fs.FSEndpoint(base_path=backup_dir, cache_file=StringIO())
+            endpoint = FSEndpoint(base_path=backup_dir, cache_file=StringIO())
             path = endpoint.get_destination_path('d1/f1')
             self.assertEqual(path, os.path.join(backup_dir, 'd1/f1'))
             self.assertTrue(os.path.isdir(dir_name))
@@ -331,7 +334,7 @@ class FSEndpointGetDestinationPathTest(TestCase):
             self.assertTrue(os.path.isdir(dir2))
             with open(os.path.join(dir2, 'f9'), 'w') as f:
                 f.write('previous content')
-            endpoint = fs.FSEndpoint(base_path=backup_dir, cache_file=StringIO())
+            endpoint = FSEndpoint(base_path=backup_dir, cache_file=StringIO())
             path = endpoint.get_destination_path('d1/f1')
             self.assertEqual(path, os.path.join(backup_dir, 'd1/f1'))
             self.assertTrue(os.path.isdir(dir1))
@@ -345,7 +348,7 @@ class FSEndpointGetDestinationPathTest(TestCase):
             with open(dir_name, 'w') as f:
                 f.write('content')
             self.assertTrue(os.path.isfile(dir_name))
-            endpoint = fs.FSEndpoint(base_path=backup_dir, cache_file=StringIO())
+            endpoint = FSEndpoint(base_path=backup_dir, cache_file=StringIO())
             path = endpoint.get_destination_path('d1/f1')
             self.assertEqual(path, os.path.join(backup_dir, 'd1/f1'))
             # file is removed and directory is created
@@ -359,14 +362,30 @@ class FSEndpointTransferTest(TestCase):
             destination_path = os.path.join(destination_dir, 'f1')
             with open(source_path, 'w') as f:
                 f.write('content')
-            source_endpoint = fs.FSEndpoint(base_path=source_dir, cache_file=StringIO())
-            destination_endpoint = fs.FSEndpoint(base_path=destination_dir, cache_file=StringIO())
+            source_endpoint = FSEndpoint(base_path=source_dir, cache_file=StringIO())
+            destination_endpoint = FSEndpoint(base_path=destination_dir, cache_file=StringIO())
             source_endpoint.transfer('f1', destination_endpoint)
             self.assertTrue(os.path.isfile(destination_path))
 
+    @mock_s3
+    def test_s3(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        destination_endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
+        with TemporaryDirectory() as source_dir:
+            source_endpoint = FSEndpoint(base_path=source_dir, cache_file=StringIO())
+            path = source_endpoint.get_path('f1')
+            with open(path, 'w') as f:
+                f.write('content')
+            self.assertTrue(os.path.isfile(path))
+            source_endpoint.transfer('f1', destination_endpoint)
+        obj = bucket.Object('path/f1').get()
+        self.assertEqual(obj['ETag'], '"9a0364b9e99bb480dd25e1f0284c8555"')
+        self.assertEqual(obj['ContentLength'], 7)
+        self.assertEqual(obj['Body'].read(), b'content')
+
     def test_wrong_destination_endpoint(self):
-        source_endpoint = fs.FSEndpoint(cache_file=StringIO())
-        destination_endpoint = fs.FSEndpoint(cache_file=StringIO())
+        source_endpoint = FSEndpoint(cache_file=StringIO())
+        destination_endpoint = FSEndpoint(cache_file=StringIO())
         destination_endpoint.type = 'unsupported'
         with self.assertRaises(NotImplementedError):
             source_endpoint.transfer('f1', destination_endpoint)
@@ -387,8 +406,8 @@ class FSEndpointCopyTest(TestCase):
             # Destination dir does not exist
             self.assertFalse(os.path.exists(os.path.join(temp_dir, 'destination')))
             # Endpoints
-            source_endpoint = fs.FSEndpoint(base_path=source_dir, cache_file=StringIO())
-            destination_endpoint = fs.FSEndpoint(base_path=destination_dir, cache_file=StringIO())
+            source_endpoint = FSEndpoint(base_path=source_dir, cache_file=StringIO())
+            destination_endpoint = FSEndpoint(base_path=destination_dir, cache_file=StringIO())
             source_endpoint.copy('f1', destination_endpoint)
             self.assertTrue(os.path.isfile(destination_path))
             with open(destination_path, 'r') as f:
@@ -403,9 +422,9 @@ class FSEndpointCopyTest(TestCase):
             # Source file does not exist
             self.assertFalse(os.path.exists(source_path))
             # Endpoints
-            source_endpoint = fs.FSEndpoint(base_path=source_dir, cache_file=StringIO())
+            source_endpoint = FSEndpoint(base_path=source_dir, cache_file=StringIO())
             self.assertFalse(os.path.exists(source_path))
-            destination_endpoint = fs.FSEndpoint(base_path=destination_dir, cache_file=StringIO())
+            destination_endpoint = FSEndpoint(base_path=destination_dir, cache_file=StringIO())
             # print('test source_path', source_path)
             self.assertFalse(os.path.exists(source_path))
             stdout = io.StringIO()
@@ -415,8 +434,8 @@ class FSEndpointCopyTest(TestCase):
             self.assertFalse(os.path.isfile(destination_path))
 
     def test_wrong_destination_endpoint(self):
-        source_endpoint = fs.FSEndpoint(cache_file=StringIO())
-        destination_endpoint = fs.FSEndpoint(cache_file=StringIO())
+        source_endpoint = FSEndpoint(cache_file=StringIO())
+        destination_endpoint = FSEndpoint(cache_file=StringIO())
         destination_endpoint.type = 'notfs'
         with self.assertRaises(AssertionError):
             source_endpoint.copy('f1', destination_endpoint)
@@ -429,7 +448,7 @@ class FSEndpointDeleteTest(TestCase):
             with open(file_name, 'w') as f:
                 f.write('content')
             self.assertTrue(os.path.isfile(file_name))
-            endpoint = fs.FSEndpoint(base_path=dir, cache_file=StringIO())
+            endpoint = FSEndpoint(base_path=dir, cache_file=StringIO())
             endpoint.delete('f1')
             self.assertFalse(os.path.exists(file_name))
 
@@ -437,7 +456,7 @@ class FSEndpointDeleteTest(TestCase):
         with TemporaryDirectory() as dir:
             file_name = os.path.join(dir, 'f1')
             self.assertFalse(os.path.exists(file_name))
-            endpoint = fs.FSEndpoint(base_path=dir, cache_file=StringIO())
+            endpoint = FSEndpoint(base_path=dir, cache_file=StringIO())
             stdout = io.StringIO()
             with redirect_stdout(stdout):
                 endpoint.delete('f1')
@@ -451,7 +470,7 @@ class FSEndpointDeleteTest(TestCase):
             with open(file_name, 'w') as f:
                 f.write('content')
             self.assertTrue(os.path.isfile(file_name))
-            endpoint = fs.FSEndpoint(base_path=backup_dir, cache_file=StringIO())
+            endpoint = FSEndpoint(base_path=backup_dir, cache_file=StringIO())
             endpoint.delete('d1/f1')
             self.assertFalse(os.path.exists(file_name))
             self.assertTrue(os.path.isdir(dir_name))
