@@ -164,3 +164,16 @@ class S3EndpointDownloadTest(TestCase):
                 self.assertEqual(f.read(), 'content')
             etag = utils.get_etag(destination_path)
             self.assertEqual(etag, '9a0364b9e99bb480dd25e1f0284c8555')
+
+
+class S3EndpointDeleteTest(TestCase):
+    @mock_s3
+    def test_ok(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        obj = bucket.put_object(Key='path/f1', Body='content').get()
+        objects = list(bucket.objects.filter(Prefix='path/f1'))
+        self.assertEqual(len(objects), 1)
+        endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
+        endpoint.delete('f1')
+        objects = list(bucket.objects.filter(Prefix='path/f1'))
+        self.assertEqual(len(objects), 0)
