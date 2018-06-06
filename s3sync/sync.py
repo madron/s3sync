@@ -66,3 +66,4 @@ class SyncManager(Logger):
         except KeyboardInterrupt:
             pass
         self.source.observer_stop()
+        self.destination.observer_stop()

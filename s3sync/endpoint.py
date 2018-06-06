@@ -31,7 +31,7 @@ class BaseEndpoint(Logger):
         raise NotImplementedError()
 
     def observer_start(self, events_queue):
-        raise NotImplementedError()
+        pass
 
     def observer_stop(self):
-        raise NotImplementedError()
+        pass

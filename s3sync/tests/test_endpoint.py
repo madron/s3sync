@@ -60,10 +60,8 @@ class BaseEndpointTest(TestCase):
 
     def test_observer_start(self):
         endpoint = BaseEndpoint()
-        with self.assertRaises(NotImplementedError):
-            endpoint.observer_start(None)
+        endpoint.observer_start(None)
 
     def test_observer_stop(self):
         endpoint = BaseEndpoint()
-        with self.assertRaises(NotImplementedError):
-            endpoint.observer_stop()
+        endpoint.observer_stop()
