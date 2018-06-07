@@ -663,3 +663,168 @@ class FSEndpointObserverTest(TestCase):
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 0)
+
+    def test_move_file(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=[''],
+                cache_file=StringIO(),
+            )
+            file_path = endpoint.get_path('f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            # Move file
+            os.rename(file_path, endpoint.get_path('f2'))
+            os.sync()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 2)
+            event = events[0]
+            self.assertEqual(event['type'], 'deleted')
+            self.assertEqual(event['key'], 'f1')
+            event = events[1]
+            self.assertEqual(event['type'], 'modified')
+            self.assertEqual(event['key'], 'f2')
+
+    def test_move_file_from_outside_to_inside(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            d1 = os.path.join(backup_dir, 'd1')
+            d2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(d1)
+            os.makedirs(d2)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=['d1'],
+                cache_file=StringIO(),
+            )
+            source_file_path = endpoint.get_path('d2/f1')
+            destination_file_path = endpoint.get_path('d1/f1')
+            with open(source_file_path, 'w') as f:
+                f.write('content')
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            # Move file
+            os.rename(source_file_path, destination_file_path)
+            os.sync()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 1)
+            event = events[0]
+            self.assertEqual(event['type'], 'modified')
+            self.assertEqual(event['key'], 'd1/f1')
+
+    def test_move_file_from_inside_to_outside(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            d1 = os.path.join(backup_dir, 'd1')
+            d2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(d1)
+            os.makedirs(d2)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=['d1'],
+                cache_file=StringIO(),
+            )
+            source_file_path = endpoint.get_path('d1/f1')
+            destination_file_path = endpoint.get_path('d2/f1')
+            with open(source_file_path, 'w') as f:
+                f.write('content')
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            # Move file
+            os.rename(source_file_path, destination_file_path)
+            os.sync()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 1)
+            event = events[0]
+            self.assertEqual(event['type'], 'deleted')
+            self.assertEqual(event['key'], 'd1/f1')
+
+    def test_move_directory(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            d1 = os.path.join(backup_dir, 'd1')
+            d2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(d1)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=[''],
+                cache_file=StringIO(),
+            )
+            file_path = endpoint.get_path('d1/f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            # Move directory
+            os.rename(d1, d2)
+            os.sync()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 2)
+            event = events[0]
+            self.assertEqual(event['type'], 'deleted')
+            self.assertEqual(event['key'], 'd1/f1')
+            event = events[1]
+            self.assertEqual(event['type'], 'modified')
+            self.assertEqual(event['key'], 'd2/f1')
+
+    def test_move_directory_from_outside_to_inside(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            d1 = os.path.join(backup_dir, 'd1')
+            d2 = os.path.join(backup_dir, 'd2', 'd3')
+            os.makedirs(d1)
+            os.makedirs(d2)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=['d1'],
+                cache_file=StringIO(),
+            )
+            file_path = os.path.join(d2, 'f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            # Move directory
+            os.rename(d2, os.path.join(d1, 'd4'))
+            os.sync()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 1)
+            event = events[0]
+            self.assertEqual(event['type'], 'modified')
+            self.assertEqual(event['key'], 'd1/d4/f1')
+
+    def test_move_directory_from_inside_to_outside(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            d1 = os.path.join(backup_dir, 'd1', 'd3')
+            d2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(d1)
+            os.makedirs(d2)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=['d1'],
+                cache_file=StringIO(),
+            )
+            file_path = os.path.join(d1, 'f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            # Move directory
+            os.rename(d1, os.path.join(d2, 'd4'))
+            os.sync()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 1)
+            event = events[0]
+            self.assertEqual(event['type'], 'deleted')
+            self.assertEqual(event['key'], 'd1/d3/f1')
