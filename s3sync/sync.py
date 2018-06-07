@@ -38,10 +38,10 @@ class SyncManager(Logger):
         self.source.update_key_data()
         self.destination.update_key_data()
         operations = self.get_operations()
-        for key in operations['transfer']:
-            self.transfer(key, fake=self.fake)
         for key in operations['delete']:
             self.destination.delete(key, fake=self.fake)
+        for key in operations['transfer']:
+            self.transfer(key, fake=self.fake)
 
     def transfer(self, key, fake=False):
         if not fake:

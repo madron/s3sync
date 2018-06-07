@@ -127,6 +127,13 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
     def on_any_event(self, event):
         self.log_debug(event)
 
+    def on_created(self, event):
+        if not event.is_directory:
+            key = event.src_path.replace(self.base_path, '', 1).lstrip('/')
+            if not self.is_excluded(key):
+                event = dict(type='modified', key=key)
+                self.events_queue.put(event)
+
     def on_modified(self, event):
         if not event.is_directory:
             key = event.src_path.replace(self.base_path, '', 1).lstrip('/')

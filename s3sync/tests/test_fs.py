@@ -13,6 +13,7 @@ from unittest.mock import patch
 from moto import mock_s3
 from ..fs import FSEndpoint
 from ..s3 import S3Endpoint
+from ..utils import get_queue_events
 
 
 class FSEndpointGetFsKeyTest(TestCase):
@@ -461,12 +462,12 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
-            time.sleep(0.5)
-            self.assertEqual(events_queue.qsize(), 1)
-            event = events_queue.get()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 1)
+            event = events[0]
             self.assertEqual(event['type'], 'modified')
             self.assertEqual(event['key'], 'd1/f1')
-            endpoint.observer_stop()
 
     def test_2(self):
         events_queue = Queue()
@@ -489,15 +490,15 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
-            time.sleep(0.5)
-            self.assertEqual(events_queue.qsize(), 2)
-            event = events_queue.get()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 2)
+            event = events[0]
             self.assertEqual(event['type'], 'modified')
             self.assertEqual(event['key'], 'd1/f1')
-            event = events_queue.get()
+            event = events[1]
             self.assertEqual(event['type'], 'modified')
             self.assertEqual(event['key'], 'd2/f1')
-            endpoint.observer_stop()
 
     def test_outside_base(self):
         events_queue = Queue()
@@ -515,9 +516,9 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
-            time.sleep(0.5)
-            self.assertEqual(events_queue.qsize(), 0)
             endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 0)
 
     def test_not_included(self):
         events_queue = Queue()
@@ -537,9 +538,9 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
-            time.sleep(0.5)
-            self.assertEqual(events_queue.qsize(), 0)
             endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 0)
 
     def test_excluded_1(self):
         events_queue = Queue()
@@ -560,9 +561,9 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
-            time.sleep(0.5)
-            self.assertEqual(events_queue.qsize(), 0)
             endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 0)
 
     def test_excluded_2(self):
         events_queue = Queue()
@@ -583,12 +584,12 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
-            time.sleep(0.5)
-            self.assertEqual(events_queue.qsize(), 1)
-            event = events_queue.get()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 1)
+            event = events[0]
             self.assertEqual(event['type'], 'modified')
             self.assertEqual(event['key'], 'd2/f1')
-            endpoint.observer_stop()
 
     def test_delete_file(self):
         events_queue = Queue()
@@ -606,12 +607,12 @@ class FSEndpointObserverTest(TestCase):
             # Remove file
             os.remove(file_path)
             os.sync()
-            time.sleep(0.5)
-            self.assertEqual(events_queue.qsize(), 1)
-            event = events_queue.get()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 1)
+            event = events[0]
             self.assertEqual(event['type'], 'deleted')
             self.assertEqual(event['key'], 'f1')
-            endpoint.observer_stop()
 
     def test_delete_directory(self):
         events_queue = Queue()
@@ -631,12 +632,12 @@ class FSEndpointObserverTest(TestCase):
             # Remove directory
             shutil.rmtree(d1)
             os.sync()
-            time.sleep(0.5)
-            self.assertEqual(events_queue.qsize(), 1)
-            event = events_queue.get()
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 1)
+            event = events[0]
             self.assertEqual(event['type'], 'deleted')
             self.assertEqual(event['key'], 'd1/f1')
-            endpoint.observer_stop()
 
     def test_delete_excluded(self):
         events_queue = Queue()
@@ -659,7 +660,6 @@ class FSEndpointObserverTest(TestCase):
             # Remove file
             os.remove(file_path)
             os.sync()
-            time.sleep(0.5)
-            self.assertEqual(events_queue.qsize(), 0)
             endpoint.observer_stop()
-
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 0)
