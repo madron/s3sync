@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from prometheus_client import start_http_server
 from .constants import DEFAULT_SOURCE
 from .constants import DEFAULT_CACHE_DIR
 from .sync import SyncManager
@@ -19,6 +20,7 @@ def main(args):
         default=[], help='paths to exclude', metavar='PATH')
     parser.add_argument('--watch', dest='watch',
                         action='store_true', help='Watch for changes')
+    parser.add_argument('--port', type=int, help='Prometheus port')
     parser.add_argument('-v', '--verbosity', dest='verbosity', type=int,
         default=1, help='Verbosity level', metavar='N')
     parser.add_argument('--fake', dest='fake', action='store_true', help='Fake run')
@@ -26,6 +28,8 @@ def main(args):
     options = vars(parser.parse_args(args))
 
     manager = SyncManager(**options)
+    if options['port']:
+        start_http_server(options['port'])
     manager.sync()
     if options['watch']:
         manager.watch()
