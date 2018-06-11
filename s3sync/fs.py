@@ -101,14 +101,18 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
     def update_single_key_data(self, key):
         if not self.is_excluded(key):
             path = self.get_path(key)
-            stat = os.stat(path)
-            etag = utils.get_etag(path)
-            self.key_data[key] = dict(
-                size=stat.st_size,
-                last_modified=stat.st_mtime,
-                etag=etag,
-            )
-            self.etag[key] = etag
+            try:
+                stat = os.stat(path)
+                etag = utils.get_etag(path)
+                self.key_data[key] = dict(
+                    size=stat.st_size,
+                    last_modified=stat.st_mtime,
+                    etag=etag,
+                )
+                self.etag[key] = etag
+            except FileNotFoundError:
+                del self.key_data[key]
+                del self.etag[key]
             self.update_totals()
 
     def get_path(self, key):
