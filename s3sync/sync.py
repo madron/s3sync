@@ -23,6 +23,7 @@ class SyncManager(Logger):
             options['name'] = name
             options['base_path'] = path
             options['cache_dir'] = kwargs.get('cache_dir')
+            options['cache_file'] = kwargs.get('cache_file')
             return FSEndpoint(**options)
         else:
             options['base_url'] = path
@@ -67,3 +68,19 @@ class SyncManager(Logger):
             pass
         self.source.observer_stop()
         self.destination.observer_stop()
+
+    def get_events_operations(self):
+        transfer = []
+        delete = []
+        for event in utils.get_queue_events(self.source_queue):
+            if event['type'] == 'modified':
+                transfer.append(event['key'])
+            if event['type'] == 'deleted':
+                delete.append(event['key'])
+        transfer = list(set(transfer))
+        delete = list(set(delete))
+        for event in utils.get_queue_events(self.destination_queue):
+            key = event['key']
+            if not key in transfer and not key in delete:
+                transfer.append(key)
+        return dict(transfer=sorted(transfer), delete=sorted(delete))

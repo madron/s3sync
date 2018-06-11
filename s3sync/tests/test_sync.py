@@ -1,6 +1,7 @@
 import io
 import os
 import boto3
+from queue import Queue
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 from moto import mock_s3
@@ -78,3 +79,97 @@ class SyncManagerTransferTest(TestCase):
         manager.source.type = 'unsupported'
         with self.assertRaises(NotImplementedError):
             manager.transfer('f1')
+
+
+class SyncManagerGetEventsOperationsTest(TestCase):
+    def setUp(self):
+        self.manager = SyncManager(
+            source='/tmp/backup',
+            destination='/tmp/restore',
+            cache_file=io.StringIO(),
+        )
+
+    def test_no_events(self):
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=[], delete=[]))
+
+    def test_source_modified_1(self):
+        self.manager.source_queue.put(dict(type='modified', key='f1'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f1'], delete=[]))
+
+    def test_source_modified_2(self):
+        self.manager.source_queue.put(dict(type='modified', key='f1'))
+        self.manager.source_queue.put(dict(type='modified', key='f2'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f1', 'f2'], delete=[]))
+
+    def test_source_modified_3(self):
+        self.manager.source_queue.put(dict(type='modified', key='f1'))
+        self.manager.source_queue.put(dict(type='modified', key='f1'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f1'], delete=[]))
+
+    def test_source_modified_destination_modified_1(self):
+        self.manager.source_queue.put(dict(type='modified', key='f1'))
+        self.manager.destination_queue.put(dict(type='modified', key='f2'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f1', 'f2'], delete=[]))
+
+    def test_source_modified_destination_modified_2(self):
+        self.manager.source_queue.put(dict(type='modified', key='f1'))
+        self.manager.destination_queue.put(dict(type='modified', key='f1'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f1'], delete=[]))
+
+    def test_source_modified_destination_deleted_1(self):
+        self.manager.source_queue.put(dict(type='modified', key='f1'))
+        self.manager.destination_queue.put(dict(type='deleted', key='f2'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f1', 'f2'], delete=[]))
+
+    def test_source_modified_destination_deleted_2(self):
+        self.manager.source_queue.put(dict(type='modified', key='f1'))
+        self.manager.destination_queue.put(dict(type='deleted', key='f1'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f1'], delete=[]))
+
+    def test_source_deleted(self):
+        self.manager.source_queue.put(dict(type='deleted', key='f1'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=[], delete=['f1']))
+
+    def test_source_deleted_destination_deleted_1(self):
+        self.manager.source_queue.put(dict(type='deleted', key='f1'))
+        self.manager.destination_queue.put(dict(type='deleted', key='f2'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f2'], delete=['f1']))
+
+    def test_source_deleted_destination_deleted_2(self):
+        self.manager.source_queue.put(dict(type='deleted', key='f1'))
+        self.manager.destination_queue.put(dict(type='deleted', key='f1'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=[], delete=['f1']))
+
+    def test_source_deleted_destination_modified_1(self):
+        self.manager.source_queue.put(dict(type='deleted', key='f1'))
+        self.manager.destination_queue.put(dict(type='modified', key='f2'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f2'], delete=['f1']))
+
+    def test_source_deleted_destination_modified_2(self):
+        self.manager.source_queue.put(dict(type='deleted', key='f1'))
+        self.manager.destination_queue.put(dict(type='modified', key='f1'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=[], delete=['f1']))
+
+    def test_destination_deleted(self):
+        self.manager.destination_queue.put(dict(type='deleted', key='f1'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f1'], delete=[]))
+
+    def test_destination_modified_deleted(self):
+        self.manager.destination_queue.put(dict(type='modified', key='f1'))
+        self.manager.destination_queue.put(dict(type='deleted', key='f1'))
+        operations = self.manager.get_events_operations()
+        self.assertEqual(operations, dict(transfer=['f1'], delete=[]))
