@@ -55,8 +55,7 @@ class S3Endpoint(BaseEndpoint):
                     )
         self.update_etag()
         self.update_totals()
-        self.log_info('Total files: {}'.format(self.total_files))
-        self.log_info('Total bytes: {}'.format(self.total_bytes))
+        self.counter.log_totals()
 
     def get_path(self, key):
         return os.path.join(self.base_path, key)

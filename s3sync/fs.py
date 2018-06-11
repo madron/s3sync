@@ -15,7 +15,7 @@ from .endpoint import BaseEndpoint
 class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
     def __init__(self, name='source', base_path='/', cache_dir=None, cache_file=None,
                  hashed_bytes_threshold=HASHED_BYTES_THRESHOLD, **kwargs):
-        super().__init__(log_prefix=name, **kwargs)
+        super().__init__(name=name, log_prefix=name, **kwargs)
         self.type = 'fs'
         self.name = name
         self.base_path = base_path
@@ -95,8 +95,7 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
         self.cache.write(self.key_data)
         self.update_etag()
         self.update_totals()
-        self.log_info('Total files: {}'.format(self.total_files))
-        self.log_info('Total bytes: {}'.format(self.total_bytes))
+        self.counter.log_totals()
 
     def update_single_key_data(self, key):
         if not self.is_excluded(key):

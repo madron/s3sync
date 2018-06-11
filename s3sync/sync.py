@@ -19,8 +19,8 @@ class SyncManager(Logger):
         keys = ['includes', 'excludes', 'verbosity']
         options = {k: kwargs[k] for k in keys if k in kwargs}
         options['verbosity'] = self.verbosity
+        options['name'] = name
         if path.startswith('/'):
-            options['name'] = name
             options['base_path'] = path
             options['cache_dir'] = kwargs.get('cache_dir')
             options['cache_file'] = kwargs.get('cache_file')
