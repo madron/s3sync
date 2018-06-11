@@ -313,6 +313,53 @@ class FSEndpointUpdateKeyDataTest(TestCase):
         self.assertIn('files/f1 - Permission denied', stdout.getvalue())
 
 
+class FSEndpointUpdateSingleKeyDataTest(TestCase):
+    def test_1(self):
+        with TemporaryDirectory() as backup_dir:
+            endpoint = FSEndpoint(base_path=backup_dir, includes=[''], cache_file=StringIO())
+            f1 = endpoint.get_path('f1')
+            f2 = endpoint.get_path('f2')
+            with open(f1, 'w') as f:
+                f.write('content')
+            endpoint.update_key_data()
+            # key_data
+            f = endpoint.key_data['f1']
+            self.assertEqual(f['size'], 7)
+            self.assertIsInstance(f['last_modified'], float)
+            self.assertEqual(f['etag'], '9a0364b9e99bb480dd25e1f0284c8555')
+            self.assertEqual(len(endpoint.key_data), 1)
+            # Etag
+            self.assertEqual(
+                endpoint.etag['f1'],
+                '9a0364b9e99bb480dd25e1f0284c8555',
+            )
+            self.assertEqual(len(endpoint.etag), 1)
+            # Totals
+            self.assertEqual(endpoint.total_files, 1)
+            self.assertEqual(endpoint.total_bytes, 7)
+            # Update single key data
+            with open(f2, 'w') as f:
+                f.write('contentcontent')
+            endpoint.update_single_key_data('f2')
+            # key_data
+            f = endpoint.key_data['f2']
+            self.assertEqual(f['size'], 14)
+            self.assertIsInstance(f['last_modified'], float)
+            self.assertEqual(f['etag'], '6858851eee0e05f318897984757b59dc')
+            self.assertEqual(len(endpoint.key_data), 2)
+            # Etag
+            self.assertEqual(
+                endpoint.etag['f2'],
+                '6858851eee0e05f318897984757b59dc',
+            )
+            self.assertEqual(len(endpoint.etag), 2)
+            # Totals
+            self.assertEqual(endpoint.total_files, 2)
+            self.assertEqual(endpoint.total_bytes, 21)
+
+
+
+
 class FSEndpointGetDestinationPathTest(TestCase):
     def test_ok(self):
         with TemporaryDirectory() as backup_dir:

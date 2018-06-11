@@ -1,2 +1,2 @@
 # Coverage
-coverage run -m unittest discover && coverage report --skip-covered
+coverage run -m unittest && coverage report --skip-covered

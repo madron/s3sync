@@ -39,6 +39,9 @@ class SyncManager(Logger):
         self.source.update_key_data()
         self.destination.update_key_data()
         operations = self.get_operations()
+        self.sync_operations(operations)
+
+    def sync_operations(self, operations, update_key_data=False):
         for key in operations['delete']:
             self.destination.delete(key, fake=self.fake)
         for key in operations['transfer']:

@@ -45,6 +45,17 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
                 )
         return path_data
 
+    def get_path_stat(self, path):
+        stat = os.stat(path)
+        key = path.replace(self.base_path, '', 1).lstrip('/')
+        if not self.is_excluded(key):
+            path_data[key] = dict(
+                size=stat.st_size,
+                last_modified=stat.st_mtime,
+            )
+
+
+
     def get_fs_key_data(self):
         key_data = dict()
         for include in self.includes:
@@ -86,6 +97,19 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
         self.update_totals()
         self.log_info('Total files: {}'.format(self.total_files))
         self.log_info('Total bytes: {}'.format(self.total_bytes))
+
+    def update_single_key_data(self, key):
+        if not self.is_excluded(key):
+            path = self.get_path(key)
+            stat = os.stat(path)
+            etag = utils.get_etag(path)
+            self.key_data[key] = dict(
+                size=stat.st_size,
+                last_modified=stat.st_mtime,
+                etag=etag,
+            )
+            self.etag[key] = etag
+            self.update_totals()
 
     def get_path(self, key):
         return os.path.join(self.base_path, key)
