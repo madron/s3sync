@@ -81,6 +81,83 @@ class S3EndpointUpdateKeyDataTest(TestCase):
         )
 
 
+class S3EndpointUpdateSingleKeyDataTest(TestCase):
+    @mock_s3
+    def test_add(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='path/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
+        endpoint.update_key_data()
+        data = endpoint.key_data['f1']
+        self.assertEqual(data['size'], 7)
+        self.assertEqual(data['etag'], '9a0364b9e99bb480dd25e1f0284c8555')
+        self.assertEqual(len(endpoint.key_data), 1)
+        self.assertEqual(endpoint.etag['f1'], '9a0364b9e99bb480dd25e1f0284c8555')
+        self.assertEqual(len(endpoint.etag), 1)
+        self.assertEqual(endpoint.total_files, 1)
+        self.assertEqual(endpoint.total_bytes, 7)
+        # Add object
+        bucket.put_object(Key='path/f2', Body='contentcontent')
+        endpoint.update_single_key_data('f2')
+        data = endpoint.key_data['f2']
+        self.assertEqual(data['size'], 14)
+        self.assertEqual(data['etag'], '6858851eee0e05f318897984757b59dc')
+        self.assertEqual(len(endpoint.key_data), 2)
+        self.assertEqual(endpoint.etag['f2'], '6858851eee0e05f318897984757b59dc')
+        self.assertEqual(len(endpoint.etag), 2)
+        self.assertEqual(endpoint.total_files, 2)
+        self.assertEqual(endpoint.total_bytes, 21)
+
+    @mock_s3
+    def test_change(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='path/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
+        endpoint.update_key_data()
+        data = endpoint.key_data['f1']
+        self.assertEqual(data['size'], 7)
+        self.assertEqual(data['etag'], '9a0364b9e99bb480dd25e1f0284c8555')
+        self.assertEqual(len(endpoint.key_data), 1)
+        self.assertEqual(endpoint.etag['f1'], '9a0364b9e99bb480dd25e1f0284c8555')
+        self.assertEqual(len(endpoint.etag), 1)
+        self.assertEqual(endpoint.total_files, 1)
+        self.assertEqual(endpoint.total_bytes, 7)
+        # Change object
+        bucket.put_object(Key='path/f1', Body='contentcontent')
+        endpoint.update_single_key_data('f1')
+        data = endpoint.key_data['f1']
+        self.assertEqual(data['size'], 14)
+        self.assertEqual(data['etag'], '6858851eee0e05f318897984757b59dc')
+        self.assertEqual(len(endpoint.key_data), 1)
+        self.assertEqual(endpoint.etag['f1'], '6858851eee0e05f318897984757b59dc')
+        self.assertEqual(len(endpoint.etag), 1)
+        self.assertEqual(endpoint.total_files, 1)
+        self.assertEqual(endpoint.total_bytes, 14)
+
+    @mock_s3
+    def test_delete(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='path/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
+        endpoint.update_key_data()
+        data = endpoint.key_data['f1']
+        self.assertEqual(data['size'], 7)
+        self.assertEqual(data['etag'], '9a0364b9e99bb480dd25e1f0284c8555')
+        self.assertEqual(len(endpoint.key_data), 1)
+        self.assertEqual(endpoint.etag['f1'], '9a0364b9e99bb480dd25e1f0284c8555')
+        self.assertEqual(len(endpoint.etag), 1)
+        self.assertEqual(endpoint.total_files, 1)
+        self.assertEqual(endpoint.total_bytes, 7)
+        # Delete object
+        bucket.Object('path/f1').delete()
+        endpoint.update_single_key_data('f1')
+        self.assertEqual(len(endpoint.key_data), 0)
+        self.assertEqual(len(endpoint.etag), 0)
+        self.assertEqual(endpoint.total_files, 0)
+        self.assertEqual(endpoint.total_bytes, 0)
+
+
+
 class S3EndpointGetPathTest(TestCase):
     def test_1(self):
         endpoint = S3Endpoint(base_url='default:bucket')

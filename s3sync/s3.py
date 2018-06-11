@@ -57,6 +57,21 @@ class S3Endpoint(BaseEndpoint):
         self.update_totals()
         self.counter.log_totals()
 
+    def update_single_key_data(self, key):
+        bucket = self.get_bucket()
+        try:
+            data = bucket.Object('{}/{}'.format(self.base_path, key)).get()
+            etag = data['ETag'].strip('"')
+            self.key_data[key] = dict(
+                size=data['ContentLength'],
+                etag=etag,
+            )
+            self.etag[key] = etag
+        except bucket.meta.client.exceptions.NoSuchKey:
+            del self.key_data[key]
+            del self.etag[key]
+        self.update_totals()
+
     def get_path(self, key):
         return os.path.join(self.base_path, key)
 

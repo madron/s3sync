@@ -54,8 +54,6 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
                 last_modified=stat.st_mtime,
             )
 
-
-
     def get_fs_key_data(self):
         key_data = dict()
         for include in self.includes:
