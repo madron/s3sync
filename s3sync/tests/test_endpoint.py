@@ -5,6 +5,10 @@ from ..endpoint import BaseEndpoint
 
 
 class BaseEndpointTest(TestCase):
+    def test_update_single_key_data(self):
+        endpoint = BaseEndpoint()
+        endpoint.update_single_key_data('f1')
+
     def test_update_etag(self):
         endpoint = BaseEndpoint()
         self.assertEqual(endpoint.etag, dict())

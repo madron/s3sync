@@ -44,8 +44,30 @@ class SyncManager(Logger):
     def sync_operations(self, operations, update_key_data=False):
         for key in operations['delete']:
             self.destination.delete(key, fake=self.fake)
+            if update_key_data:
+                self.source.update_single_key_data(key)
+                self.destination.update_single_key_data(key)
         for key in operations['transfer']:
             self.transfer(key, fake=self.fake)
+            if update_key_data:
+                self.source.update_single_key_data(key)
+                self.destination.update_single_key_data(key)
+
+    def get_events_operations(self):
+        transfer = []
+        delete = []
+        for event in utils.get_queue_events(self.source_queue):
+            if event['type'] == 'modified':
+                transfer.append(event['key'])
+            if event['type'] == 'deleted':
+                delete.append(event['key'])
+        transfer = list(set(transfer))
+        delete = list(set(delete))
+        for event in utils.get_queue_events(self.destination_queue):
+            key = event['key']
+            if not key in transfer and not key in delete:
+                transfer.append(key)
+        return dict(transfer=sorted(transfer), delete=sorted(delete))
 
     def transfer(self, key, fake=False):
         if not fake:
@@ -63,27 +85,11 @@ class SyncManager(Logger):
 
     def watch(self):
         self.source.observer_start(self.source_queue)
-        self.destination.observer_start(self.destination_queue)
         try:
             while True:
                 time.sleep(1)
+                operations = self.get_events_operations()
+                self.sync_operations(operations, update_key_data=True)
         except KeyboardInterrupt:
             pass
         self.source.observer_stop()
-        self.destination.observer_stop()
-
-    def get_events_operations(self):
-        transfer = []
-        delete = []
-        for event in utils.get_queue_events(self.source_queue):
-            if event['type'] == 'modified':
-                transfer.append(event['key'])
-            if event['type'] == 'deleted':
-                delete.append(event['key'])
-        transfer = list(set(transfer))
-        delete = list(set(delete))
-        for event in utils.get_queue_events(self.destination_queue):
-            key = event['key']
-            if not key in transfer and not key in delete:
-                transfer.append(key)
-        return dict(transfer=sorted(transfer), delete=sorted(delete))

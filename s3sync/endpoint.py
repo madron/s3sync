@@ -17,6 +17,9 @@ class BaseEndpoint(Logger):
                 return True
         return False
 
+    def update_single_key_data(self, key):
+        pass
+
     def update_etag(self):
         self.etag = dict((key, data['etag']) for key, data in self.key_data.items())
 
