@@ -153,9 +153,14 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
                 self.events_queue.put(dict(type='modified', key=key))
 
     def on_deleted(self, event):
-        if not event.is_directory:
-            key = event.src_path.replace(self.base_path, '', 1).lstrip('/')
-            if not self.is_excluded(key):
+        key = event.src_path.replace(self.base_path, '', 1).lstrip('/')
+        if not self.is_excluded(key):
+            if event.is_directory:
+                keys = [k for k in self.key_data.keys() if k.startswith(key)]
+                for k in keys:
+                    event = dict(type='deleted', key=k)
+                    self.events_queue.put(event)
+            else:
                 event = dict(type='deleted', key=key)
                 self.events_queue.put(event)
 

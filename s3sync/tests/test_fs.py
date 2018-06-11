@@ -462,6 +462,7 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 1)
@@ -490,6 +491,7 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 2)
@@ -516,6 +518,7 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 0)
@@ -538,6 +541,7 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 0)
@@ -561,6 +565,7 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 0)
@@ -584,6 +589,7 @@ class FSEndpointObserverTest(TestCase):
             with open(file_path, 'w') as f:
                 f.write('content')
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 1)
@@ -607,6 +613,7 @@ class FSEndpointObserverTest(TestCase):
             # Remove file
             os.remove(file_path)
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 1)
@@ -632,6 +639,7 @@ class FSEndpointObserverTest(TestCase):
             # Remove directory
             shutil.rmtree(d1)
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 1)
@@ -660,6 +668,7 @@ class FSEndpointObserverTest(TestCase):
             # Remove file
             os.remove(file_path)
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 0)
@@ -680,6 +689,7 @@ class FSEndpointObserverTest(TestCase):
             # Move file
             os.rename(file_path, endpoint.get_path('f2'))
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 2)
@@ -711,6 +721,7 @@ class FSEndpointObserverTest(TestCase):
             # Move file
             os.rename(source_file_path, destination_file_path)
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 1)
@@ -739,6 +750,7 @@ class FSEndpointObserverTest(TestCase):
             # Move file
             os.rename(source_file_path, destination_file_path)
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 1)
@@ -765,6 +777,7 @@ class FSEndpointObserverTest(TestCase):
             # Move directory
             os.rename(d1, d2)
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 2)
@@ -795,6 +808,7 @@ class FSEndpointObserverTest(TestCase):
             # Move directory
             os.rename(d2, os.path.join(d1, 'd4'))
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 1)
@@ -814,6 +828,7 @@ class FSEndpointObserverTest(TestCase):
                 includes=['d1'],
                 cache_file=StringIO(),
             )
+            endpoint.key_data = {'d1/d3/f1': dict()}
             file_path = os.path.join(d1, 'f1')
             with open(file_path, 'w') as f:
                 f.write('content')
@@ -822,6 +837,7 @@ class FSEndpointObserverTest(TestCase):
             # Move directory
             os.rename(d1, os.path.join(d2, 'd4'))
             os.sync()
+            time.sleep(0.5)
             endpoint.observer_stop()
             events = get_queue_events(events_queue)
             self.assertEqual(len(events), 1)
