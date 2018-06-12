@@ -1,6 +1,7 @@
 import time
 from queue import Queue
 from .import utils
+from .counter import FileByteCounter
 from .fs import FSEndpoint
 from .logger import Logger
 from .s3 import S3Endpoint
@@ -14,6 +15,8 @@ class SyncManager(Logger):
         self.destination = self.get_endpoint(kwargs['destination'], 'destination', **kwargs)
         self.source_queue = Queue()
         self.destination_queue = Queue()
+        self.queue_counter = FileByteCounter(name='queue', verbosity=verbosity)
+        self.trensferred_counter = FileByteCounter(name='transferred', verbosity=verbosity)
 
     def get_endpoint(self, path, name, **kwargs):
         keys = ['includes', 'excludes', 'verbosity']
@@ -42,15 +45,28 @@ class SyncManager(Logger):
         self.sync_operations(operations)
 
     def sync_operations(self, operations, update_key_data=False):
+        # Update source key data
+        if update_key_data:
+            for key in operations['delete']:
+                self.source.update_single_key_data(key)
+            for key in operations['transfer']:
+                self.source.update_single_key_data(key)
+        # Update queue counter
+        total_files = len(operations['delete']) + len(operations['transfer'])
+        total_bytes = 0
+        for key in operations['transfer']:
+            total_bytes += self.source.key_data[key]['size']
+        self.queue_counter.set(total_files, total_bytes)
+        #  Operations
         for key in operations['delete']:
             self.destination.delete(key, fake=self.fake)
+            self.queue_counter.add(-1, 0)
             if update_key_data:
-                self.source.update_single_key_data(key)
                 self.destination.update_single_key_data(key)
         for key in operations['transfer']:
             self.transfer(key, fake=self.fake)
+            self.queue_counter.add(-1, -self.source.key_data[key]['size'])
             if update_key_data:
-                self.source.update_single_key_data(key)
                 self.destination.update_single_key_data(key)
 
     def get_events_operations(self):

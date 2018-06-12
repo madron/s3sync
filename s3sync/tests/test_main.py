@@ -20,6 +20,7 @@ class MainTest(TestCase):
             with redirect_stdout(stdout):
                 rc = main(args)
         self.assertEqual(rc, 0)
-        self.assertIn('INFO <source> Total files: 1', stdout.getvalue())
+        self.assertIn('INFO <source> Files: 1', stdout.getvalue())
+        self.assertIn('INFO <source> Bytes: 0', stdout.getvalue())
         self.assertIn('INFO <transfer> f1', stdout.getvalue())
         self.assertIn('INFO <delete> f2', stdout.getvalue())

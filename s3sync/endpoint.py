@@ -29,7 +29,7 @@ class BaseEndpoint(Logger):
     def update_totals(self):
         self.total_files = len(self.key_data)
         self.total_bytes = sum([x['size'] for x in self.key_data.values()])
-        self.counter.update(self.total_files, self.total_bytes)
+        self.counter.set(self.total_files, self.total_bytes)
 
     def transfer(self, key, destination):
         raise NotImplementedError()

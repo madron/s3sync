@@ -108,8 +108,8 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
                 )
                 self.etag[key] = etag
             except FileNotFoundError:
-                del self.key_data[key]
-                del self.etag[key]
+                if key in self.key_data: del self.key_data[key]
+                if key in self.etag: del self.etag[key]
             self.update_totals()
 
     def get_path(self, key):
