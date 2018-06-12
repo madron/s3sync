@@ -90,10 +90,13 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
         for key in key_errors:
             del fs_data[key]
         self.key_data = fs_data
-        self.cache.write(self.key_data)
+        self.write_cache()
         self.update_etag()
         self.update_totals()
         self.counter.log_totals()
+
+    def write_cache(self):
+        self.cache.write(self.key_data)
 
     def update_single_key_data(self, key):
         if not self.is_excluded(key):

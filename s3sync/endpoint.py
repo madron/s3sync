@@ -37,6 +37,9 @@ class BaseEndpoint(Logger):
     def delete(self, key):
         raise NotImplementedError()
 
+    def write_cache(self):
+        pass
+
     def observer_start(self, events_queue):
         pass
 

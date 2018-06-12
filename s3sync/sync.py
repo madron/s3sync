@@ -70,14 +70,15 @@ class SyncManager(Logger):
             total_files = len(operations['delete']) + len(operations['transfer'])
             metrics.rescan_files.set(total_files)
         self.sync_operations(operations)
+        self.source.write_cache()
+        self.destination.write_cache()
 
-    def sync_operations(self, operations, update_key_data=False):
+    def sync_operations(self, operations):
         # Update source key data
-        if update_key_data:
-            for key in operations['delete']:
-                self.source.update_single_key_data(key)
-            for key in operations['transfer']:
-                self.source.update_single_key_data(key)
+        for key in operations['delete']:
+            self.source.update_single_key_data(key)
+        for key in operations['transfer']:
+            self.source.update_single_key_data(key)
         # Update queue counter
         total_files = len(operations['delete']) + len(operations['transfer'])
         total_bytes = 0
@@ -88,13 +89,13 @@ class SyncManager(Logger):
         finished = False
         while not finished:
             try:
-                self.execute_operations(update_key_data=update_key_data)
+                self.execute_operations()
                 finished = True
             except Exception as e:
                 self.log_error(e)
                 time.sleep(5)
 
-    def execute_operations(self, update_key_data=False):
+    def execute_operations(self):
         #  Operations
         while len(self.operations['delete']) > 0:
             key = self.operations['delete'][0]
@@ -102,8 +103,7 @@ class SyncManager(Logger):
             self.operations['delete'].pop()
             self.queue_counter.add(-1, 0)
             self.transferred_counter.add(1, 0)
-            if update_key_data:
-                self.destination.update_single_key_data(key)
+            self.destination.update_single_key_data(key)
         while len(self.operations['transfer']) > 0:
             key = self.operations['transfer'][0]
             self.transfer(key, fake=self.fake)
@@ -111,8 +111,7 @@ class SyncManager(Logger):
             size = self.source.key_data[key]['size']
             self.queue_counter.add(-1, -size)
             self.transferred_counter.add(1, size)
-            if update_key_data:
-                self.destination.update_single_key_data(key)
+            self.destination.update_single_key_data(key)
 
     def get_events_operations(self):
         transfer = []
@@ -154,7 +153,7 @@ class SyncManager(Logger):
                         self.sync()
                 time.sleep(1)
                 operations = self.get_events_operations()
-                self.sync_operations(operations, update_key_data=True)
+                self.sync_operations(operations)
         except KeyboardInterrupt:
             pass
         self.source.observer_stop()
