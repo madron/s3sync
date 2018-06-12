@@ -11,12 +11,15 @@ class SyncManager(Logger):
     def __init__(self, fake=False, verbosity=0, **kwargs):
         super().__init__(log_prefix='SyncManager', verbosity=verbosity)
         self.fake = fake
-        self.source = self.get_endpoint(kwargs['source'], 'source', **kwargs)
-        self.destination = self.get_endpoint(kwargs['destination'], 'destination', **kwargs)
+        restore = kwargs.get('restore', False)
+        source = kwargs['destination'] if restore else kwargs['source']
+        destination = kwargs['source'] if restore else kwargs['destination']
+        self.source = self.get_endpoint(source, 'source', **kwargs)
+        self.destination = self.get_endpoint(destination, 'destination', **kwargs)
         self.source_queue = Queue()
         self.destination_queue = Queue()
         self.queue_counter = FileByteCounter(name='queue', verbosity=verbosity)
-        self.trensferred_counter = FileByteCounter(name='transferred', verbosity=verbosity)
+        self.transferred_counter = FileByteCounter(name='transferred', verbosity=verbosity)
 
     def get_endpoint(self, path, name, **kwargs):
         keys = ['includes', 'excludes', 'verbosity']
@@ -61,11 +64,14 @@ class SyncManager(Logger):
         for key in operations['delete']:
             self.destination.delete(key, fake=self.fake)
             self.queue_counter.add(-1, 0)
+            self.transferred_counter.add(1, 0)
             if update_key_data:
                 self.destination.update_single_key_data(key)
         for key in operations['transfer']:
             self.transfer(key, fake=self.fake)
-            self.queue_counter.add(-1, -self.source.key_data[key]['size'])
+            size = self.source.key_data[key]['size']
+            self.queue_counter.add(-1, -size)
+            self.transferred_counter.add(1, size)
             if update_key_data:
                 self.destination.update_single_key_data(key)
 

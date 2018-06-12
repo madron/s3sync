@@ -20,6 +20,8 @@ def main(args):
         default=[], help='paths to exclude', metavar='PATH')
     parser.add_argument('--watch', dest='watch',
                         action='store_true', help='Watch for changes')
+    parser.add_argument('--restore', dest='restore',
+                        action='store_true', help='Restore files from destination to source')
     parser.add_argument('--port', type=int, help='Prometheus port')
     parser.add_argument('-v', '--verbosity', dest='verbosity', type=int,
         default=1, help='Verbosity level', metavar='N')
