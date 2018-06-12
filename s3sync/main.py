@@ -22,6 +22,10 @@ def main(args):
                         action='store_true', help='Watch for changes')
     parser.add_argument('--restore', dest='restore',
                         action='store_true', help='Restore files from destination to source')
+    parser.add_argument(
+        '--rescan-delay', dest='rescan_delay', type=int, default=0, metavar='SECONDS',
+        help='Delay for complete rescan: 0 = no rescan',
+    )
     parser.add_argument('--port', type=int, help='Prometheus port')
     parser.add_argument('-v', '--verbosity', dest='verbosity', type=int,
         default=1, help='Verbosity level', metavar='N')

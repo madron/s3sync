@@ -1,4 +1,6 @@
 import time
+from datetime import datetime
+from datetime import timedelta
 from queue import Queue
 from .import utils
 from .counter import FileByteCounter
@@ -16,6 +18,8 @@ class SyncManager(Logger):
         destination = kwargs['source'] if restore else kwargs['destination']
         self.source = self.get_endpoint(source, 'source', **kwargs)
         self.destination = self.get_endpoint(destination, 'destination', **kwargs)
+        self.rescan_delay = kwargs.get('rescan_delay', 0)
+        self.rescan_time = None
         self.source_queue = Queue()
         self.destination_queue = Queue()
         self.queue_counter = FileByteCounter(name='queue', verbosity=verbosity)
@@ -44,6 +48,7 @@ class SyncManager(Logger):
     def sync(self):
         self.source.update_key_data()
         self.destination.update_key_data()
+        self.rescan_time = datetime.now()
         operations = self.get_operations()
         self.sync_operations(operations)
 
@@ -109,6 +114,10 @@ class SyncManager(Logger):
         self.source.observer_start(self.source_queue)
         try:
             while True:
+                if self.rescan_delay:
+                    delay = timedelta(seconds=self.rescan_delay)
+                    if datetime.now() > self.rescan_time + delay:
+                        self.sync()
                 time.sleep(1)
                 operations = self.get_events_operations()
                 self.sync_operations(operations, update_key_data=True)
