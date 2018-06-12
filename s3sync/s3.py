@@ -77,24 +77,14 @@ class S3Endpoint(BaseEndpoint):
 
     def upload(self, key, source_path):
         s3_path = self.get_path(key)
-        try:
-            self.get_bucket().Object(s3_path).upload_file(source_path)
-        except Exception as e:
-            self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
+        self.get_bucket().Object(s3_path).upload_file(source_path)
 
     def download(self, key, destination_path):
         s3_path = self.get_path(key)
-        try:
-            self.get_bucket().Object(s3_path).download_file(destination_path)
-        except Exception as e:
-            self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
+        self.get_bucket().Object(s3_path).download_file(destination_path)
 
     def delete(self, key, fake=False):
         if not fake:
             destination = '{}/{}'.format(self.base_path, key)
-            try:
-                self.get_bucket().Object(destination).delete()
-            except Exception as e:
-                self.log_error('"{}" {}'.format(key, e), log_prefix='delete')
-                return
+            self.get_bucket().Object(destination).delete()
         self.log_info(key, log_prefix='delete')

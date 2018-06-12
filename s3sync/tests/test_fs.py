@@ -503,25 +503,6 @@ class FSEndpointCopyTest(TestCase):
             with open(destination_path, 'r') as f:
                 self.assertEqual(f.read(), 'content')
 
-    def test_ko(self):
-        with TemporaryDirectory() as temp_dir:
-            source_dir = os.path.join(temp_dir, 'source')
-            destination_dir = os.path.join(temp_dir, 'destination', 'subdir')
-            source_path = os.path.join(source_dir, 'f1')
-            destination_path = os.path.join(destination_dir, 'f1')
-            # Source file does not exist
-            self.assertFalse(os.path.exists(source_path))
-            # Endpoints
-            source_endpoint = FSEndpoint(base_path=source_dir, cache_file=StringIO())
-            self.assertFalse(os.path.exists(source_path))
-            destination_endpoint = FSEndpoint(base_path=destination_dir, cache_file=StringIO())
-            self.assertFalse(os.path.exists(source_path))
-            stdout = io.StringIO()
-            with redirect_stdout(stdout):
-                source_endpoint.copy('f1', destination_endpoint)
-            self.assertIn('ERROR <transfer> "f1" [Errno 2] No such file or directory', stdout.getvalue())
-            self.assertFalse(os.path.isfile(destination_path))
-
     def test_wrong_destination_endpoint(self):
         source_endpoint = FSEndpoint(cache_file=StringIO())
         destination_endpoint = FSEndpoint(cache_file=StringIO())
@@ -540,16 +521,6 @@ class FSEndpointDeleteTest(TestCase):
             endpoint = FSEndpoint(base_path=dir, cache_file=StringIO())
             endpoint.delete('f1')
             self.assertFalse(os.path.exists(file_name))
-
-    def test_file_does_not_exist(self):
-        with TemporaryDirectory() as dir:
-            file_name = os.path.join(dir, 'f1')
-            self.assertFalse(os.path.exists(file_name))
-            endpoint = FSEndpoint(base_path=dir, cache_file=StringIO())
-            stdout = io.StringIO()
-            with redirect_stdout(stdout):
-                endpoint.delete('f1')
-            self.assertIn('ERROR <delete> "f1" [Errno 2] No such file or directory', stdout.getvalue())
 
     def test_empty_dir(self):
         with TemporaryDirectory() as backup_dir:

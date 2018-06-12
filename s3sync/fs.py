@@ -134,19 +134,13 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
         assert(destination_endpoint.type == 'fs')
         source_path = self.get_path(key)
         destination_path = destination_endpoint.get_destination_path(key)
-        try:
-            copy2(source_path, destination_path)
-        except Exception as e:
-            self.log_error('"{}" {}'.format(key, e), log_prefix='transfer')
+        copy2(source_path, destination_path)
 
     def delete(self, key, fake=False):
         self.log_debug(key, log_prefix='delete')
         destination = os.path.join(self.base_path, key)
         if not fake:
-            try:
-                os.remove(destination)
-            except Exception as e:
-                self.log_error('"{}" {}'.format(key, e), log_prefix='delete')
+            os.remove(destination)
         self.log_info(key, log_prefix='delete')
 
     def on_any_event(self, event):

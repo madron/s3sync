@@ -2,6 +2,7 @@ import time
 from datetime import datetime
 from datetime import timedelta
 from queue import Queue
+from .import metrics
 from .import utils
 from .counter import FileByteCounter
 from .fs import FSEndpoint
@@ -18,6 +19,7 @@ class SyncManager(Logger):
         destination = kwargs['source'] if restore else kwargs['destination']
         self.source = self.get_endpoint(source, 'source', **kwargs)
         self.destination = self.get_endpoint(destination, 'destination', **kwargs)
+        self.operations = dict(transfer=[], delete=[])
         self.rescan_delay = kwargs.get('rescan_delay', 0)
         self.rescan_time = None
         self.source_queue = Queue()
@@ -45,11 +47,28 @@ class SyncManager(Logger):
             self.destination.etag,
         )
 
-    def sync(self):
-        self.source.update_key_data()
-        self.destination.update_key_data()
+    def sync(self, rescan=False):
+        finished = False
+        while not finished:
+            try:
+                self.source.update_key_data()
+                finished = True
+            except Exception as e:
+                self.log_error(e)
+                time.sleep(5)
+        finished = False
+        while not finished:
+            try:
+                self.destination.update_key_data()
+                finished = True
+            except Exception as e:
+                self.log_error(e)
+                time.sleep(5)
         self.rescan_time = datetime.now()
         operations = self.get_operations()
+        if rescan:
+            total_files = len(operations['delete']) + len(operations['transfer'])
+            metrics.rescan_files.set(total_files)
         self.sync_operations(operations)
 
     def sync_operations(self, operations, update_key_data=False):
@@ -65,15 +84,30 @@ class SyncManager(Logger):
         for key in operations['transfer']:
             total_bytes += self.source.key_data[key]['size']
         self.queue_counter.set(total_files, total_bytes)
+        self.operations = operations
+        finished = False
+        while not finished:
+            try:
+                self.execute_operations(update_key_data=update_key_data)
+                finished = True
+            except Exception as e:
+                self.log_error(e)
+                time.sleep(5)
+
+    def execute_operations(self, update_key_data=False):
         #  Operations
-        for key in operations['delete']:
+        while len(self.operations['delete']) > 0:
+            key = self.operations['delete'][0]
             self.destination.delete(key, fake=self.fake)
+            self.operations['delete'].pop()
             self.queue_counter.add(-1, 0)
             self.transferred_counter.add(1, 0)
             if update_key_data:
                 self.destination.update_single_key_data(key)
-        for key in operations['transfer']:
+        while len(self.operations['transfer']) > 0:
+            key = self.operations['transfer'][0]
             self.transfer(key, fake=self.fake)
+            self.operations['transfer'].pop()
             size = self.source.key_data[key]['size']
             self.queue_counter.add(-1, -size)
             self.transferred_counter.add(1, size)

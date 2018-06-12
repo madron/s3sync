@@ -191,20 +191,6 @@ class S3EndpointUploadTest(TestCase):
         self.assertEqual(obj['ContentLength'], 7)
         self.assertEqual(obj['Body'].read(), b'content')
 
-    @mock_s3
-    def test_no_bucket(self):
-        endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
-        with TemporaryDirectory() as source_dir:
-            path = os.path.join(source_dir, 'f1')
-            with open(path, 'w') as f:
-                f.write('content')
-            self.assertTrue(os.path.isfile(path))
-            stdout = io.StringIO()
-            with redirect_stdout(stdout):
-                endpoint.upload('f1', path)
-        self.assertIn('ERROR <transfer> "f1" Failed to upload', stdout.getvalue())
-        self.assertIn('An error occurred (NoSuchBucket) when calling the PutObject operation', stdout.getvalue())
-
 
 class S3EndpointDownloadTest(TestCase):
     @mock_s3
