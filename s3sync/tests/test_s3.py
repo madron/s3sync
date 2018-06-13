@@ -70,14 +70,113 @@ class S3EndpointGetBucketTest(TestCase):
 
 class S3EndpointUpdateKeyDataTest(TestCase):
     @mock_s3
-    def test_ok(self):
+    def test_bucket(self):
         bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
-        bucket.put_object(Key='path/f1', Body='content')
-        endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
+        bucket.put_object(Key='d1/d2/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket', includes=[''])
         endpoint.update_key_data()
         self.assertEqual(
             endpoint.key_data,
-            dict(f1=dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')),
+            {'d1/d2/f1': dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')},
+        )
+
+    @mock_s3
+    def test_bucket_path(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='d1/d2/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket/d1', includes=[''])
+        endpoint.update_key_data()
+        self.assertEqual(
+            endpoint.key_data,
+            {'d2/f1': dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')},
+        )
+
+    @mock_s3
+    def test_bucket_include(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='d1/d2/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket', includes=['d1'])
+        endpoint.update_key_data()
+        self.assertEqual(
+            endpoint.key_data,
+            {'d1/d2/f1': dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')},
+        )
+
+    @mock_s3
+    def test_bucket_path_include(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='backup/d1/d2/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket/backup', includes=['d1'])
+        endpoint.update_key_data()
+        self.assertEqual(
+            endpoint.key_data,
+            {'d1/d2/f1': dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')},
+        )
+
+    @mock_s3
+    def test_bucket_include_slash_1(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='d1/d2/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket', includes=['/d1'])
+        endpoint.update_key_data()
+        self.assertEqual(
+            endpoint.key_data,
+            {'d1/d2/f1': dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')},
+        )
+
+    @mock_s3
+    def test_bucket_include_slash_2(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='d1/d2/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket', includes=['d1/'])
+        endpoint.update_key_data()
+        self.assertEqual(
+            endpoint.key_data,
+            {'d1/d2/f1': dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')},
+        )
+
+    @mock_s3
+    def test_bucket_include_slash_3(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='d1/d2/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket', includes=['/d1/'])
+        endpoint.update_key_data()
+        self.assertEqual(
+            endpoint.key_data,
+            {'d1/d2/f1': dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')},
+        )
+
+    @mock_s3
+    def test_bucket_path_include_slash_1(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='backup/d1/d2/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket/backup', includes=['/d1'])
+        endpoint.update_key_data()
+        self.assertEqual(
+            endpoint.key_data,
+            {'d1/d2/f1': dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')},
+        )
+
+    @mock_s3
+    def test_bucket_path_include_slash_2(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='backup/d1/d2/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket/backup', includes=['d1/'])
+        endpoint.update_key_data()
+        self.assertEqual(
+            endpoint.key_data,
+            {'d1/d2/f1': dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')},
+        )
+
+    @mock_s3
+    def test_bucket_path_include_slash_3(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        bucket.put_object(Key='backup/d1/d2/f1', Body='content')
+        endpoint = S3Endpoint(base_url='default:bucket/backup', includes=['/d1/'])
+        endpoint.update_key_data()
+        self.assertEqual(
+            endpoint.key_data,
+            {'d1/d2/f1': dict(size=7, etag='9a0364b9e99bb480dd25e1f0284c8555')},
         )
 
 

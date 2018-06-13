@@ -40,14 +40,24 @@ class S3Endpoint(BaseEndpoint):
         self.bucket = boto3.resource('s3', **profile).Bucket(self.bucket_name)
         return self.bucket
 
+    def get_prefix(self, include):
+        base_path = self.base_path.rstrip('/')
+        include = include.lstrip('/')
+        prefix = '{}/{}'.format(self.base_path, include).lstrip('/')
+        return prefix
+
+    def get_key(self, s3key):
+        key = s3key.replace(self.base_path, '', 1).lstrip('/')
+        return key
+
     def update_key_data(self):
         bucket = self.get_bucket()
         self.key_data = dict()
         for include in self.includes:
-            prefix = '{}/{}'.format(self.base_path, include)
+            prefix = self.get_prefix(include)
             for obj in bucket.objects.filter(Prefix=prefix):
                 data = obj.meta.data
-                key = data['Key'].replace(prefix, '', 1)
+                key = self.get_key(data['Key'])
                 if not self.is_excluded(key):
                     self.key_data[key] = dict(
                         size=data['Size'],
@@ -60,7 +70,8 @@ class S3Endpoint(BaseEndpoint):
     def update_single_key_data(self, key):
         bucket = self.get_bucket()
         try:
-            data = bucket.Object('{}/{}'.format(self.base_path, key)).get()
+            base_path = self.base_path.rstrip('/')
+            data = bucket.Object('{}/{}'.format(base_path, key)).get()
             etag = data['ETag'].strip('"')
             self.key_data[key] = dict(
                 size=data['ContentLength'],
