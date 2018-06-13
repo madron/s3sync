@@ -100,14 +100,14 @@ class SyncManager(Logger):
         while len(self.operations['delete']) > 0:
             key = self.operations['delete'][0]
             self.destination.delete(key, fake=self.fake)
-            self.operations['delete'].pop()
+            self.operations['delete'].pop(0)
             self.queue_counter.add(-1, 0)
             self.transferred_counter.add(1, 0)
             self.destination.update_single_key_data(key)
         while len(self.operations['transfer']) > 0:
             key = self.operations['transfer'][0]
             self.transfer(key, fake=self.fake)
-            self.operations['transfer'].pop()
+            self.operations['transfer'].pop(0)
             size = self.source.key_data[key]['size']
             self.queue_counter.add(-1, -size)
             self.transferred_counter.add(1, size)
