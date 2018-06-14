@@ -160,7 +160,7 @@ class SyncManager(Logger):
                         self.sync()
                 time.sleep(1)
                 operations = self.get_events_operations()
-                operations = self.check_operations_etag()
+                operations = self.check_operations_etag(operations)
                 self.sync_operations(operations)
         except KeyboardInterrupt:
             pass
