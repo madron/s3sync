@@ -177,6 +177,28 @@ class SyncManagerGetEventsOperationsTest(TestCase):
 
 
 class SyncManagerCheckOperationsEtagTest(TestCase):
+    def test_new_file(self):
+        with TemporaryDirectory() as source_dir, TemporaryDirectory() as destination_dir:
+            manager = SyncManager(
+                source=source_dir,
+                destination=destination_dir,
+                includes=[''],
+                cache_file=io.StringIO(),
+            )
+            manager.sync()
+            self.assertEqual(manager.source.key_data, dict())
+            self.assertEqual(manager.destination.key_data, dict())
+            # Create file
+            file_path = manager.source.get_path('f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            operations = dict(transfer=['f1'], delete=[])
+            operations = manager.check_operations_etag(operations)
+            self.assertEqual(operations, dict(transfer=['f1'], delete=[]))
+            data = manager.source.key_data['f1']
+            self.assertEqual(data['size'], 7)
+            self.assertEqual(data['etag'], '9a0364b9e99bb480dd25e1f0284c8555')
+
     def test_same_etag(self):
         with TemporaryDirectory() as source_dir, TemporaryDirectory() as destination_dir:
             manager = SyncManager(

@@ -132,7 +132,8 @@ class SyncManager(Logger):
             self.source.update_single_key_data(key)
         transfer = []
         for key in operations['transfer']:
-            if not self.source.etag[key] == self.destination.etag[key]:
+            destination_etag = self.destination.etag.get(key, '')
+            if not self.source.etag[key] == destination_etag:
                 transfer.append(key)
         return dict(transfer=transfer, delete=operations['delete'])
 
