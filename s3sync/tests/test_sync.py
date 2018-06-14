@@ -1,5 +1,6 @@
 import io
 import os
+import time
 import boto3
 from queue import Queue
 from tempfile import TemporaryDirectory
@@ -173,3 +174,88 @@ class SyncManagerGetEventsOperationsTest(TestCase):
         self.manager.destination_queue.put(dict(type='deleted', key='f1'))
         operations = self.manager.get_events_operations()
         self.assertEqual(operations, dict(transfer=['f1'], delete=[]))
+
+
+class SyncManagerCheckOperationsEtagTest(TestCase):
+    def test_same_etag(self):
+        with TemporaryDirectory() as source_dir, TemporaryDirectory() as destination_dir:
+            manager = SyncManager(
+                source=source_dir,
+                destination=destination_dir,
+                includes=[''],
+                cache_file=io.StringIO(),
+            )
+            file_path = manager.source.get_path('f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            manager.sync()
+            size = manager.source.key_data['f1']['size']
+            last_modified = manager.source.key_data['f1']['last_modified']
+            etag = manager.source.key_data['f1']['etag']
+            self.assertEqual(size, 7)
+            self.assertEqual(etag, '9a0364b9e99bb480dd25e1f0284c8555')
+            # Change file with same content
+            time.sleep(0.0001)
+            with open(file_path, 'w') as f:
+                f.write('content')
+            operations = dict(transfer=['f1'], delete=[])
+            operations = manager.check_operations_etag(operations)
+            self.assertEqual(operations, dict(transfer=[], delete=[]))
+            data = manager.source.key_data['f1']
+            self.assertEqual(data['size'], size)
+            self.assertEqual(data['etag'], etag)
+            self.assertNotEqual(data['last_modified'], last_modified)
+
+    def test_different_etag(self):
+        with TemporaryDirectory() as source_dir, TemporaryDirectory() as destination_dir:
+            manager = SyncManager(
+                source=source_dir,
+                destination=destination_dir,
+                includes=[''],
+                cache_file=io.StringIO(),
+            )
+            file_path = manager.source.get_path('f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            manager.sync()
+            size = manager.source.key_data['f1']['size']
+            last_modified = manager.source.key_data['f1']['last_modified']
+            etag = manager.source.key_data['f1']['etag']
+            self.assertEqual(size, 7)
+            self.assertEqual(etag, '9a0364b9e99bb480dd25e1f0284c8555')
+            # Change file with different content
+            time.sleep(0.0001)
+            with open(file_path, 'w') as f:
+                f.write('Content')
+            operations = dict(transfer=['f1'], delete=[])
+            operations = manager.check_operations_etag(operations)
+            self.assertEqual(operations, dict(transfer=['f1'], delete=[]))
+            data = manager.source.key_data['f1']
+            size = manager.source.key_data['f1']['size']
+            etag = manager.source.key_data['f1']['etag']
+            self.assertEqual(size, 7)
+            self.assertEqual(etag, 'f15c1cae7882448b3fb0404682e17e61')
+            modified = manager.source.key_data['f1']['last_modified']
+            self.assertNotEqual(modified, last_modified)
+
+    def test_delete(self):
+        with TemporaryDirectory() as source_dir, TemporaryDirectory() as destination_dir:
+            manager = SyncManager(
+                source=source_dir,
+                destination=destination_dir,
+                includes=[''],
+                cache_file=io.StringIO(),
+            )
+            file_path = manager.source.get_path('f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            manager.sync()
+            data = manager.source.key_data['f1']
+            self.assertEqual(data['size'], 7)
+            self.assertEqual(data['etag'], '9a0364b9e99bb480dd25e1f0284c8555')
+            # Remove file
+            os.remove(file_path)
+            operations = dict(transfer=[], delete=['f1'])
+            operations = manager.check_operations_etag(operations)
+            self.assertEqual(operations, dict(transfer=[], delete=['f1']))
+            self.assertNotIn('f1', manager.source.key_data)

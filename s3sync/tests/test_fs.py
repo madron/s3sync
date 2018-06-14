@@ -433,8 +433,6 @@ class FSEndpointUpdateSingleKeyDataTest(TestCase):
             self.assertEqual(endpoint.total_bytes, 0)
 
 
-
-
 class FSEndpointGetDestinationPathTest(TestCase):
     def test_ok(self):
         with TemporaryDirectory() as backup_dir:

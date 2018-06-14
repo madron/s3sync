@@ -74,11 +74,6 @@ class SyncManager(Logger):
         self.destination.write_cache()
 
     def sync_operations(self, operations):
-        # Update source key data
-        for key in operations['delete']:
-            self.source.update_single_key_data(key)
-        for key in operations['transfer']:
-            self.source.update_single_key_data(key)
         # Update queue counter
         total_files = len(operations['delete']) + len(operations['transfer'])
         total_bytes = 0
@@ -129,6 +124,18 @@ class SyncManager(Logger):
                 transfer.append(key)
         return dict(transfer=sorted(transfer), delete=sorted(delete))
 
+    def check_operations_etag(self, operations):
+        # Update source key data
+        for key in operations['delete']:
+            self.source.update_single_key_data(key)
+        for key in operations['transfer']:
+            self.source.update_single_key_data(key)
+        transfer = []
+        for key in operations['transfer']:
+            if not self.source.etag[key] == self.destination.etag[key]:
+                transfer.append(key)
+        return dict(transfer=transfer, delete=operations['delete'])
+
     def transfer(self, key, fake=False):
         if not fake:
             if self.source.type == 'fs' and self.destination.type == 'fs':
@@ -153,6 +160,7 @@ class SyncManager(Logger):
                         self.sync()
                 time.sleep(1)
                 operations = self.get_events_operations()
+                operations = self.check_operations_etag()
                 self.sync_operations(operations)
         except KeyboardInterrupt:
             pass
