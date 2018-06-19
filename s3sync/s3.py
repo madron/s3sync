@@ -88,7 +88,11 @@ class S3Endpoint(BaseEndpoint):
 
     def upload(self, key, source_path):
         s3_path = self.get_path(key)
-        self.get_bucket().Object(s3_path).upload_file(source_path)
+        try:
+            self.get_bucket().Object(s3_path).upload_file(source_path)
+        except:
+            self.log_error('upload - key: {} - source_path: {}'.format(key, source_path))
+            raise
 
     def download(self, key, destination_path):
         s3_path = self.get_path(key)
