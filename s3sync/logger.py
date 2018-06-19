@@ -1,4 +1,5 @@
 import sys
+import traceback
 from . import metrics
 
 class Logger(object):
@@ -12,7 +13,7 @@ class Logger(object):
             try:
                 print('INFO <{}> {}'.format(log_prefix, message))
             except Exception as e:
-                self.log_error(str(e), log_prefix=log_prefix)
+                self.log_error(str(e), error=e, log_prefix=log_prefix)
             sys.stdout.flush()
 
     def log_debug(self, message, log_prefix=None):
@@ -21,14 +22,15 @@ class Logger(object):
             try:
                 print('DEBUG <{}> {}'.format(log_prefix, message))
             except Exception as e:
-                self.log_error(str(e), log_prefix=log_prefix)
+                self.log_error(str(e), error=e, log_prefix=log_prefix)
             sys.stdout.flush()
 
-    def log_error(self, message, log_prefix=None):
+    def log_error(self, message, error=None, log_prefix=None):
         metrics.errors.inc(1)
         log_prefix = log_prefix or self.log_prefix
         try:
             print('ERROR <{}> {}'.format(log_prefix, message))
+            print(traceback.format_exc())
         except Exception as e:
-            self.log_error(str(e), log_prefix=log_prefix)
+            self.log_error(str(e), error=e, log_prefix=log_prefix)
         sys.stdout.flush()

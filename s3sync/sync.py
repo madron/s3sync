@@ -54,7 +54,7 @@ class SyncManager(Logger):
                 self.source.update_key_data()
                 finished = True
             except Exception as e:
-                self.log_error(e)
+                self.log_error(str(e), error=e)
                 time.sleep(5)
         finished = False
         while not finished:
@@ -62,7 +62,7 @@ class SyncManager(Logger):
                 self.destination.update_key_data()
                 finished = True
             except Exception as e:
-                self.log_error(e)
+                self.log_error(str(e), error=e)
                 time.sleep(5)
         self.rescan_time = datetime.now()
         operations = self.get_operations()
@@ -87,7 +87,7 @@ class SyncManager(Logger):
                 self.execute_operations()
                 finished = True
             except Exception as e:
-                self.log_error(e)
+                self.log_error(str(e), error=e)
                 time.sleep(5)
 
     def execute_operations(self):

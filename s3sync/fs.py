@@ -80,7 +80,7 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
                     data['etag'] = utils.get_etag(path)
                 except Exception as e:
                     key_errors.append(key)
-                    self.log_error('File: {} - {}'.format(path, e))
+                    self.log_error('File: {}'.format(path), error=e)
                     continue
                 hashed_bytes += data['size']
                 if hashed_bytes > self.hashed_bytes_threshold:
