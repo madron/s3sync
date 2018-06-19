@@ -310,7 +310,8 @@ class FSEndpointUpdateKeyDataTest(TestCase):
             endpoint.update_key_data()
         self.assertEqual(endpoint.key_data, dict())
         self.assertIn('ERROR <source> File:', stdout.getvalue())
-        self.assertIn('files/f1 - Permission denied', stdout.getvalue())
+        self.assertIn('files/f1', stdout.getvalue())
+        self.assertIn('OSError: Permission denied', stdout.getvalue())
 
 
 class FSEndpointUpdateSingleKeyDataTest(TestCase):

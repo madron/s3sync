@@ -30,7 +30,8 @@ class Logger(object):
         log_prefix = log_prefix or self.log_prefix
         try:
             print('ERROR <{}> {}'.format(log_prefix, message))
-            print(traceback.format_exc())
+            if error:
+                print(traceback.format_exc())
         except Exception as e:
             self.log_error(str(e), error=e, log_prefix=log_prefix)
         sys.stdout.flush()
