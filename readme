@@ -1,2 +1,8 @@
 # Coverage
 coverage run -m unittest && coverage report --skip-covered
+
+# Build binary for ubuntu precise
+docker build -f Dockerfile-precise -t s3sync-precise .
+docker run -d --name s3sync-precise s3sync-precise sleep 1d
+docker cp s3sync-precise:/src/dist/s3sync dist/s3sync_x86_64_libc6_2.15
+docker rm -fv s3sync-precise
