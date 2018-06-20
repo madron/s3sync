@@ -10,28 +10,22 @@ class Logger(object):
     def log_info(self, message, log_prefix=None):
         if self.verbosity > 0:
             log_prefix = log_prefix or self.log_prefix
-            try:
-                print('INFO <{}> {}'.format(log_prefix, message))
-            except Exception as e:
-                self.log_error(str(e), error=e, log_prefix=log_prefix)
+            msg = message.encode('utf-8', 'replace').decode()
+            print('INFO <{}> {}'.format(log_prefix, msg))
             sys.stdout.flush()
 
     def log_debug(self, message, log_prefix=None):
         if self.verbosity > 1:
             log_prefix = log_prefix or self.log_prefix
-            try:
-                print('DEBUG <{}> {}'.format(log_prefix, message))
-            except Exception as e:
-                self.log_error(str(e), error=e, log_prefix=log_prefix)
+            msg = message.encode('utf-8', 'replace').decode()
+            print('DEBUG <{}> {}'.format(log_prefix, msg))
             sys.stdout.flush()
 
     def log_error(self, message, error=None, log_prefix=None):
         metrics.errors.inc(1)
         log_prefix = log_prefix or self.log_prefix
-        try:
-            print('ERROR <{}> {}'.format(log_prefix, message))
-            if error:
-                print(traceback.format_exc())
-        except Exception as e:
-            self.log_error(str(e), error=e, log_prefix=log_prefix)
+        msg = message.encode('utf-8', 'replace').decode()
+        print('ERROR <{}> {}'.format(log_prefix, msg))
+        if error:
+            print(traceback.format_exc())
         sys.stdout.flush()

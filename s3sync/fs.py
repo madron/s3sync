@@ -45,15 +45,6 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
                 )
         return path_data
 
-    def get_path_stat(self, path):
-        stat = os.stat(path)
-        key = path.replace(self.base_path, '', 1).lstrip('/')
-        if not self.is_excluded(key):
-            path_data[key] = dict(
-                size=stat.st_size,
-                last_modified=stat.st_mtime,
-            )
-
     def get_fs_key_data(self):
         key_data = dict()
         for include in self.includes:

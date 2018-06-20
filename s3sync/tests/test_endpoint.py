@@ -5,6 +5,23 @@ from ..endpoint import BaseEndpoint
 
 
 class BaseEndpointTest(TestCase):
+    def test_is_excluded_false(self):
+        endpoint = BaseEndpoint(includes=['files'], excludes=['files/trash'])
+        self.assertFalse(endpoint.is_excluded('files/d1/f1'))
+
+    def test_is_excluded_true(self):
+        endpoint = BaseEndpoint(includes=['files'], excludes=['files/trash'])
+        self.assertTrue(endpoint.is_excluded('files/trash/f1'))
+
+    def test_is_excluded_surrogates_error(self):
+        endpoint = BaseEndpoint(includes=['files'], excludes=['files/trash'])
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            self.assertTrue(endpoint.is_excluded('files/d1/f1\udcf9'))
+        self.assertIn("ERROR <> files/d1/f1?", stdout.getvalue())
+        self.assertIn("'utf-8' codec can't encode character", stdout.getvalue())
+        self.assertIn("surrogates not allowed", stdout.getvalue())
+
     def test_update_single_key_data(self):
         endpoint = BaseEndpoint()
         endpoint.update_single_key_data('f1')
@@ -56,6 +73,10 @@ class BaseEndpointTest(TestCase):
         endpoint = BaseEndpoint()
         with self.assertRaises(NotImplementedError):
             endpoint.transfer('f1', None)
+
+    def test_write_cache(self):
+        endpoint = BaseEndpoint()
+        endpoint.write_cache()
 
     def test_delete(self):
         endpoint = BaseEndpoint()

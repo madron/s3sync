@@ -212,7 +212,6 @@ class SyncManagerCheckOperationsEtagTest(TestCase):
                 f.write('content')
             manager.sync()
             size = manager.source.key_data['f1']['size']
-            last_modified = manager.source.key_data['f1']['last_modified']
             etag = manager.source.key_data['f1']['etag']
             self.assertEqual(size, 7)
             self.assertEqual(etag, '9a0364b9e99bb480dd25e1f0284c8555')
@@ -226,7 +225,6 @@ class SyncManagerCheckOperationsEtagTest(TestCase):
             data = manager.source.key_data['f1']
             self.assertEqual(data['size'], size)
             self.assertEqual(data['etag'], etag)
-            self.assertNotEqual(data['last_modified'], last_modified)
 
     def test_different_etag(self):
         with TemporaryDirectory() as source_dir, TemporaryDirectory() as destination_dir:
@@ -241,7 +239,6 @@ class SyncManagerCheckOperationsEtagTest(TestCase):
                 f.write('content')
             manager.sync()
             size = manager.source.key_data['f1']['size']
-            last_modified = manager.source.key_data['f1']['last_modified']
             etag = manager.source.key_data['f1']['etag']
             self.assertEqual(size, 7)
             self.assertEqual(etag, '9a0364b9e99bb480dd25e1f0284c8555')
@@ -258,7 +255,6 @@ class SyncManagerCheckOperationsEtagTest(TestCase):
             self.assertEqual(size, 7)
             self.assertEqual(etag, 'f15c1cae7882448b3fb0404682e17e61')
             modified = manager.source.key_data['f1']['last_modified']
-            self.assertNotEqual(modified, last_modified)
 
     def test_delete(self):
         with TemporaryDirectory() as source_dir, TemporaryDirectory() as destination_dir:

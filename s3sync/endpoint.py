@@ -1,3 +1,4 @@
+from botocore.utils import percent_encode
 from .counter import FileByteCounter
 from .logger import Logger
 
@@ -18,6 +19,11 @@ class BaseEndpoint(Logger):
         for exclude in self.excludes:
             if key.startswith(exclude):
                 return True
+        try:
+            percent_encode(key)
+        except UnicodeEncodeError as e:
+            self.log_error('{} - {}'.format(key, str(e)))
+            return True
         return False
 
     def update_single_key_data(self, key):
