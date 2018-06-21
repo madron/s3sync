@@ -15,6 +15,7 @@ RUN pip install -r /src/requirements/test.txt
 RUN pip install -r /src/requirements/build.txt
 
 COPY main.py /src
+COPY .coveragerc /src
 COPY s3sync /src/s3sync
 
 # Tests
