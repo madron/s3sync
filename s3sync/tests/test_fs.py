@@ -594,6 +594,31 @@ class FSEndpointObserverTest(TestCase):
             self.assertEqual(event['type'], 'modified')
             self.assertEqual(event['key'], 'd2/f1')
 
+    def test_directory_does_not_exist(self):
+        events_queue = Queue()
+        with TemporaryDirectory() as backup_dir:
+            dir1 = os.path.join(backup_dir, 'd1')
+            dir2 = os.path.join(backup_dir, 'd2')
+            os.makedirs(dir1)
+            endpoint = FSEndpoint(
+                base_path=backup_dir,
+                includes=['d1', 'd2'],
+                cache_file=StringIO(),
+            )
+            endpoint.observer_start(events_queue)
+            self.assertTrue(events_queue.empty())
+            file_path = endpoint.get_path('d1/f1')
+            with open(file_path, 'w') as f:
+                f.write('content')
+            os.sync()
+            time.sleep(0.5)
+            endpoint.observer_stop()
+            events = get_queue_events(events_queue)
+            self.assertEqual(len(events), 1)
+            event = events[0]
+            self.assertEqual(event['type'], 'modified')
+            self.assertEqual(event['key'], 'd1/f1')
+
     def test_outside_base(self):
         events_queue = Queue()
         with TemporaryDirectory() as backup_dir:

@@ -182,7 +182,8 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
         self.observer = Observer()
         for include in self.includes:
             path = os.path.join(self.base_path, include)
-            self.observer.schedule(self, path, recursive=True)
+            if os.path.isdir(path):
+                self.observer.schedule(self, path, recursive=True)
         self.observer.start()
 
     def observer_stop(self):
