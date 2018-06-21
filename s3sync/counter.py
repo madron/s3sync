@@ -40,8 +40,12 @@ class FileByteCounter(Logger):
             metrics.transferred_files.set(self.files)
             metrics.transferred_bytes.set(self.bytes)
         if not (self.files == self.prev_files and self.prev_bytes == self.prev_bytes):
-            self.log_debug('Files: {}'.format(self.files))
-            self.log_debug('Bytes: {}'.format(self.bytes))
+            if self.name == 'queue':
+                self.log_info('Files: {}'.format(self.files))
+                self.log_info('Bytes: {}'.format(self.bytes))
+            else:
+                self.log_debug('Files: {}'.format(self.files))
+                self.log_debug('Bytes: {}'.format(self.bytes))
 
     def log_totals(self):
         self.log_info('Files: {}'.format(self.files))

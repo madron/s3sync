@@ -138,7 +138,7 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
         self.log_info(key, log_prefix='delete')
 
     def on_any_event(self, event):
-        self.log_debug(event)
+        self.log_debug(str(event))
 
     def on_created(self, event):
         if not event.is_directory:
