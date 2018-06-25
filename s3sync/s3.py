@@ -55,6 +55,8 @@ class S3Endpoint(BaseEndpoint):
         self.key_data = dict()
         for include in self.includes:
             prefix = self.get_prefix(include)
+            include_files = 0
+            include_bytes = 0
             for obj in bucket.objects.filter(Prefix=prefix):
                 data = obj.meta.data
                 key = self.get_key(data['Key'])
@@ -63,8 +65,10 @@ class S3Endpoint(BaseEndpoint):
                         size=data['Size'],
                         etag=data['ETag'].strip('"'),
                     )
+                    include_files += 1
+                    include_bytes += data['Size']
+            self.counter.set(include_files, include_bytes, include)
         self.update_etag()
-        self.update_totals()
         self.counter.log_totals()
 
     def update_single_key_data(self, key):
@@ -73,15 +77,23 @@ class S3Endpoint(BaseEndpoint):
             base_path = self.base_path.rstrip('/')
             data = bucket.Object('{}/{}'.format(base_path, key)).get()
             etag = data['ETag'].strip('"')
+            old_data = self.key_data.get(key, None)
             self.key_data[key] = dict(
                 size=data['ContentLength'],
                 etag=etag,
             )
             self.etag[key] = etag
+            include = self.get_include(key)
+            if old_data:
+                self.counter.add(0, self.key_data[key]['size'] - old_data['size'], include)
+            else:
+                self.counter.add(1, self.key_data[key]['size'], include)
         except bucket.meta.client.exceptions.NoSuchKey:
-            if key in self.key_data: del self.key_data[key]
+            if key in self.key_data:
+                include = self.get_include(key)
+                self.counter.add(-1, -self.key_data[key]['size'], include)
+                del self.key_data[key]
             if key in self.etag: del self.etag[key]
-        self.update_totals()
 
     def get_path(self, key):
         return os.path.join(self.base_path, key)

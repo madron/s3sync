@@ -57,9 +57,10 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
         hashed_files = 0
         total_files = len(fs_data)
         key_errors = []
+        include_files = dict()
+        include_bytes = dict()
         for key, data in fs_data.items():
             hashed_files += 1
-            self.total_bytes += data['size']
             old_data = self.key_data.get(key, dict())
             if      data['size'] == old_data.get('size') \
                 and data['last_modified'] == old_data.get('last_modified') \
@@ -78,12 +79,17 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
                     self.cache.write(fs_data)
                     hashed_bytes = 0
                     self.log_info('Hashed files: {}/{}'.format(hashed_files, total_files))
+            if key not in key_errors:
+                include = self.get_include(key)
+                include_files[include] = include_files.get(include, 0) + 1
+                include_bytes[include] = include_bytes.get(include, 0) + data['size']
         for key in key_errors:
             del fs_data[key]
         self.key_data = fs_data
         self.write_cache()
         self.update_etag()
-        self.update_totals()
+        for include in include_files.keys():
+            self.counter.set(include_files[include], include_bytes[include], include)
         self.counter.log_totals()
 
     def write_cache(self):
@@ -95,16 +101,24 @@ class FSEndpoint(BaseEndpoint, FileSystemEventHandler):
             try:
                 stat = os.stat(path)
                 etag = utils.get_etag(path)
+                old_data = self.key_data.get(key, None)
                 self.key_data[key] = dict(
                     size=stat.st_size,
                     last_modified=stat.st_mtime,
                     etag=etag,
                 )
                 self.etag[key] = etag
+                include = self.get_include(key)
+                if old_data:
+                    self.counter.add(0, self.key_data[key]['size'] - old_data['size'], include)
+                else:
+                    self.counter.add(1, self.key_data[key]['size'], include)
             except FileNotFoundError:
-                if key in self.key_data: del self.key_data[key]
+                if key in self.key_data:
+                    include = self.get_include(key)
+                    self.counter.add(-1, -self.key_data[key]['size'], include)
+                    del self.key_data[key]
                 if key in self.etag: del self.etag[key]
-            self.update_totals()
 
     def get_path(self, key):
         return os.path.join(self.base_path, key)

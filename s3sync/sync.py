@@ -75,11 +75,14 @@ class SyncManager(Logger):
 
     def sync_operations(self, operations):
         # Update queue counter
-        total_files = len(operations['delete']) + len(operations['transfer'])
-        total_bytes = 0
+        include_files = dict()
+        include_bytes = dict()
         for key in operations['transfer']:
-            total_bytes += self.source.key_data[key]['size']
-        self.queue_counter.set(total_files, total_bytes)
+            include = self.source.get_include(key)
+            include_files[include] = include_files.get(include, 0) + 1
+            include_bytes[include] = include_bytes.get(include, 0) + self.source.key_data[key]['size']
+        for include in include_files.keys():
+            self.queue_counter.set(include_files[include], include_bytes[include], include)
         self.operations = operations
         finished = False
         while not finished:
@@ -96,16 +99,18 @@ class SyncManager(Logger):
             key = self.operations['delete'][0]
             self.destination.delete(key, fake=self.fake)
             self.operations['delete'].pop(0)
-            self.queue_counter.add(-1, 0)
-            self.transferred_counter.add(1, 0)
+            include = self.source.get_include(key)
+            self.queue_counter.add(-1, 0, include)
+            self.transferred_counter.add(1, 0, include)
             self.destination.update_single_key_data(key)
         while len(self.operations['transfer']) > 0:
             key = self.operations['transfer'][0]
             self.transfer(key, fake=self.fake)
             self.operations['transfer'].pop(0)
             size = self.source.key_data[key]['size']
-            self.queue_counter.add(-1, -size)
-            self.transferred_counter.add(1, size)
+            include = self.source.get_include(key)
+            self.queue_counter.add(-1, -size, include)
+            self.transferred_counter.add(1, size, include)
             self.destination.update_single_key_data(key)
 
     def get_events_operations(self):

@@ -336,8 +336,8 @@ class FSEndpointUpdateSingleKeyDataTest(TestCase):
             )
             self.assertEqual(len(endpoint.etag), 1)
             # Totals
-            self.assertEqual(endpoint.total_files, 1)
-            self.assertEqual(endpoint.total_bytes, 7)
+            self.assertEqual(endpoint.counter.total_files, 1)
+            self.assertEqual(endpoint.counter.total_bytes, 7)
             # Add file
             with open(f2, 'w') as f:
                 f.write('contentcontent')
@@ -355,8 +355,8 @@ class FSEndpointUpdateSingleKeyDataTest(TestCase):
             )
             self.assertEqual(len(endpoint.etag), 2)
             # Totals
-            self.assertEqual(endpoint.total_files, 2)
-            self.assertEqual(endpoint.total_bytes, 21)
+            self.assertEqual(endpoint.counter.total_files, 2)
+            self.assertEqual(endpoint.counter.total_bytes, 21)
 
     def test_change(self):
         with TemporaryDirectory() as backup_dir:
@@ -378,8 +378,8 @@ class FSEndpointUpdateSingleKeyDataTest(TestCase):
             )
             self.assertEqual(len(endpoint.etag), 1)
             # Totals
-            self.assertEqual(endpoint.total_files, 1)
-            self.assertEqual(endpoint.total_bytes, 7)
+            self.assertEqual(endpoint.counter.total_files, 1)
+            self.assertEqual(endpoint.counter.total_bytes, 7)
             # Change file
             with open(f1, 'w') as f:
                 f.write('contentcontent')
@@ -397,8 +397,8 @@ class FSEndpointUpdateSingleKeyDataTest(TestCase):
             )
             self.assertEqual(len(endpoint.etag), 1)
             # Totals
-            self.assertEqual(endpoint.total_files, 1)
-            self.assertEqual(endpoint.total_bytes, 14)
+            self.assertEqual(endpoint.counter.total_files, 1)
+            self.assertEqual(endpoint.counter.total_bytes, 14)
 
     def test_delete(self):
         with TemporaryDirectory() as backup_dir:
@@ -420,8 +420,8 @@ class FSEndpointUpdateSingleKeyDataTest(TestCase):
             )
             self.assertEqual(len(endpoint.etag), 1)
             # Totals
-            self.assertEqual(endpoint.total_files, 1)
-            self.assertEqual(endpoint.total_bytes, 7)
+            self.assertEqual(endpoint.counter.total_files, 1)
+            self.assertEqual(endpoint.counter.total_bytes, 7)
             # Delete file
             os.remove(f1)
             endpoint.update_single_key_data('f1')
@@ -430,8 +430,8 @@ class FSEndpointUpdateSingleKeyDataTest(TestCase):
             # Etag
             self.assertEqual(len(endpoint.etag), 0)
             # Totals
-            self.assertEqual(endpoint.total_files, 0)
-            self.assertEqual(endpoint.total_bytes, 0)
+            self.assertEqual(endpoint.counter.total_files, 0)
+            self.assertEqual(endpoint.counter.total_bytes, 0)
 
 
 class FSEndpointGetDestinationPathTest(TestCase):

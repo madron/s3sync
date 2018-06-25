@@ -193,8 +193,8 @@ class S3EndpointUpdateSingleKeyDataTest(TestCase):
         self.assertEqual(len(endpoint.key_data), 1)
         self.assertEqual(endpoint.etag['f1'], '9a0364b9e99bb480dd25e1f0284c8555')
         self.assertEqual(len(endpoint.etag), 1)
-        self.assertEqual(endpoint.total_files, 1)
-        self.assertEqual(endpoint.total_bytes, 7)
+        self.assertEqual(endpoint.counter.total_files, 1)
+        self.assertEqual(endpoint.counter.total_bytes, 7)
         # Add object
         bucket.put_object(Key='path/f2', Body='contentcontent')
         endpoint.update_single_key_data('f2')
@@ -204,8 +204,8 @@ class S3EndpointUpdateSingleKeyDataTest(TestCase):
         self.assertEqual(len(endpoint.key_data), 2)
         self.assertEqual(endpoint.etag['f2'], '6858851eee0e05f318897984757b59dc')
         self.assertEqual(len(endpoint.etag), 2)
-        self.assertEqual(endpoint.total_files, 2)
-        self.assertEqual(endpoint.total_bytes, 21)
+        self.assertEqual(endpoint.counter.total_files, 2)
+        self.assertEqual(endpoint.counter.total_bytes, 21)
 
     @mock_s3
     def test_change(self):
@@ -219,8 +219,8 @@ class S3EndpointUpdateSingleKeyDataTest(TestCase):
         self.assertEqual(len(endpoint.key_data), 1)
         self.assertEqual(endpoint.etag['f1'], '9a0364b9e99bb480dd25e1f0284c8555')
         self.assertEqual(len(endpoint.etag), 1)
-        self.assertEqual(endpoint.total_files, 1)
-        self.assertEqual(endpoint.total_bytes, 7)
+        self.assertEqual(endpoint.counter.total_files, 1)
+        self.assertEqual(endpoint.counter.total_bytes, 7)
         # Change object
         bucket.put_object(Key='path/f1', Body='contentcontent')
         endpoint.update_single_key_data('f1')
@@ -230,8 +230,8 @@ class S3EndpointUpdateSingleKeyDataTest(TestCase):
         self.assertEqual(len(endpoint.key_data), 1)
         self.assertEqual(endpoint.etag['f1'], '6858851eee0e05f318897984757b59dc')
         self.assertEqual(len(endpoint.etag), 1)
-        self.assertEqual(endpoint.total_files, 1)
-        self.assertEqual(endpoint.total_bytes, 14)
+        self.assertEqual(endpoint.counter.total_files, 1)
+        self.assertEqual(endpoint.counter.total_bytes, 14)
 
     @mock_s3
     def test_delete(self):
@@ -245,15 +245,15 @@ class S3EndpointUpdateSingleKeyDataTest(TestCase):
         self.assertEqual(len(endpoint.key_data), 1)
         self.assertEqual(endpoint.etag['f1'], '9a0364b9e99bb480dd25e1f0284c8555')
         self.assertEqual(len(endpoint.etag), 1)
-        self.assertEqual(endpoint.total_files, 1)
-        self.assertEqual(endpoint.total_bytes, 7)
+        self.assertEqual(endpoint.counter.total_files, 1)
+        self.assertEqual(endpoint.counter.total_bytes, 7)
         # Delete object
         bucket.Object('path/f1').delete()
         endpoint.update_single_key_data('f1')
         self.assertEqual(len(endpoint.key_data), 0)
         self.assertEqual(len(endpoint.etag), 0)
-        self.assertEqual(endpoint.total_files, 0)
-        self.assertEqual(endpoint.total_bytes, 0)
+        self.assertEqual(endpoint.counter.total_files, 0)
+        self.assertEqual(endpoint.counter.total_bytes, 0)
 
 
 
