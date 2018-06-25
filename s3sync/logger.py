@@ -21,8 +21,8 @@ class Logger(object):
             print('DEBUG <{}> {}'.format(log_prefix, msg))
             sys.stdout.flush()
 
-    def log_error(self, message, error=None, log_prefix=None):
-        metrics.errors.inc(1)
+    def log_error(self, message, error=None, error_type='unknown', log_prefix=None):
+        metrics.errors.labels(type=error_type).inc(1)
         log_prefix = log_prefix or self.log_prefix
         msg = message.encode('ascii', 'replace').decode()
         print('ERROR <{}> {}'.format(log_prefix, msg))

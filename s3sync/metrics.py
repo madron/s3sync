@@ -18,4 +18,4 @@ queue_total_bytes = Gauge('s3sync_queue_total_bytes', 'Size of total queued file
 transferred_total_files = Gauge('s3sync_transferred_total_files', 'Number of total transferred files.')
 transferred_total_bytes = Gauge('s3sync_transferred_total_bytes', 'Size of total transferred files in bytes.')
 rescan_files = Gauge('s3sync_rescan_files', 'Number of rescan files: should be zero most of the time.')
-errors = Gauge('s3sync_errors', 'Number of errors.')
+errors = Gauge('s3sync_errors', 'Number of errors.', ['type'])

@@ -48,6 +48,8 @@ class SyncManager(Logger):
         )
 
     def sync(self, rescan=False):
+        if rescan:
+            metrics.errors.labels(type='name').set(0)
         finished = False
         while not finished:
             try:
@@ -163,7 +165,7 @@ class SyncManager(Logger):
                 if self.rescan_delay:
                     delay = timedelta(seconds=self.rescan_delay)
                     if datetime.now() > self.rescan_time + delay:
-                        self.sync()
+                        self.sync(rescan=True)
                 time.sleep(1)
                 operations = self.get_events_operations()
                 operations = self.check_operations_etag(operations)

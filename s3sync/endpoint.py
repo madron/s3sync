@@ -20,7 +20,7 @@ class BaseEndpoint(Logger):
         try:
             percent_encode(key)
         except UnicodeEncodeError as e:
-            self.log_error('{} - {}'.format(key, str(e)))
+            self.log_error('{} - {}'.format(key, str(e)), error_type='name')
             return True
         return False
 
