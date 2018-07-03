@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 from test.support import EnvironmentVarGuard
 from unittest import TestCase
 from moto import mock_s3
+from .. import exceptions
 from .. import utils
 from ..fs import FSEndpoint
 from ..s3 import S3Endpoint
@@ -289,6 +290,16 @@ class S3EndpointUploadTest(TestCase):
         self.assertEqual(obj['ETag'], '"9a0364b9e99bb480dd25e1f0284c8555"')
         self.assertEqual(obj['ContentLength'], 7)
         self.assertEqual(obj['Body'].read(), b'content')
+
+    @mock_s3
+    def test_source_not_found(self):
+        bucket = boto3.resource('s3').create_bucket(Bucket='bucket')
+        endpoint = S3Endpoint(base_url='default:bucket/path', includes=[''])
+        with TemporaryDirectory() as source_dir:
+            path = os.path.join(source_dir, 'f1')
+            self.assertFalse(os.path.isfile(path))
+            with self.assertRaises(exceptions.SourceVanishedError):
+                endpoint.upload('f1', path)
 
 
 class S3EndpointDownloadTest(TestCase):

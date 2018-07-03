@@ -1,6 +1,7 @@
 import os
 import boto3
 import botocore
+from .import exceptions
 from . import utils
 from .endpoint import BaseEndpoint
 
@@ -102,6 +103,8 @@ class S3Endpoint(BaseEndpoint):
         s3_path = self.get_path(key)
         try:
             self.get_bucket().Object(s3_path).upload_file(source_path)
+        except FileNotFoundError as e:
+            raise exceptions.SourceVanishedError(str(e))
         except:
             self.log_error('upload - key: {} - source_path: {}'.format(key, source_path))
             raise

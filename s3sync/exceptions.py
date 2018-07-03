@@ -1,0 +1,2 @@
+class SourceVanishedError(Exception):
+    pass

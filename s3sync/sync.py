@@ -2,6 +2,7 @@ import time
 from datetime import datetime
 from datetime import timedelta
 from queue import Queue
+from .import exceptions
 from .import metrics
 from .import utils
 from .counter import FileByteCounter
@@ -91,6 +92,9 @@ class SyncManager(Logger):
             try:
                 self.execute_operations()
                 finished = True
+            except exceptions.SourceVanishedError as e:
+                self.log_error(str(e), error=e)
+                finished = True
             except Exception as e:
                 self.log_error(str(e), error=e)
                 time.sleep(5)
@@ -169,7 +173,10 @@ class SyncManager(Logger):
                 time.sleep(1)
                 operations = self.get_events_operations()
                 operations = self.check_operations_etag(operations)
-                self.sync_operations(operations)
+                try:
+                    self.sync_operations(operations)
+                except exceptions.SourceVanishedError:
+                    self.sync(rescan=True)
         except KeyboardInterrupt:
             pass
         self.source.observer_stop()
