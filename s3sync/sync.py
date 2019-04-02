@@ -1,4 +1,5 @@
 import time
+import botocore
 from datetime import datetime
 from datetime import timedelta
 from queue import Queue
@@ -56,6 +57,13 @@ class SyncManager(Logger):
             try:
                 self.source.update_key_data()
                 finished = True
+            except botocore.exceptions.ClientError as e:
+                if 'InvalidAccessKeyId' in e.args[0]:
+                    self.log_error(str(e), error=e, error_type='authentication')
+                    time.sleep(60)
+                else:
+                    self.log_error(str(e), error=e)
+                    time.sleep(5)
             except Exception as e:
                 self.log_error(str(e), error=e)
                 time.sleep(5)
@@ -64,6 +72,13 @@ class SyncManager(Logger):
             try:
                 self.destination.update_key_data()
                 finished = True
+            except botocore.exceptions.ClientError as e:
+                if 'InvalidAccessKeyId' in e.args[0]:
+                    self.log_error(str(e), error=e, error_type='authentication')
+                    time.sleep(60)
+                else:
+                    self.log_error(str(e), error=e)
+                    time.sleep(5)
             except Exception as e:
                 self.log_error(str(e), error=e)
                 time.sleep(5)
